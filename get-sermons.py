@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib import request
 from bs4 import BeautifulSoup
 import re
+from time import sleep
 
 
 class Sermon:
@@ -24,12 +25,16 @@ CACHE.mkdir(exist_ok=True, parents=True)
 
 BOOK_REGEX = re.compile(r'(\d{1,}):(\d{1,})-?(\d{1,})?:?(\d{1,})?')
 
+last_request = datetime.now()
+
 def getPage(page: str):
     page_cache = CACHE.joinpath(request.url2pathname(page.replace('https://', ""))).with_suffix(".html")
     if page_cache.exists():
         with open(page_cache, encoding="utf-8") as f:
             return f.read()
     page_cache.parent.mkdir(exist_ok=True, parents=True)
+    while last_request < datetime.now() - timedelta(seconds=1):
+        sleep(1)
     response = request.urlopen(page)
     if response.code == 404:
         raise FileNotFoundError()
