@@ -36,7 +36,8 @@ def getPage(page: str):
     while last_request < datetime.now() - timedelta(seconds=1):
         sleep(1)
     response = request.urlopen(page)
-    if response.code == 404:
+    if response.code != 200:
+        print(f"Error found when loading {page}")
         raise FileNotFoundError()
     string: str = response.read().decode()
     with open(page_cache, "w+", encoding="utf-8") as f:
