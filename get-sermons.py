@@ -160,8 +160,20 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
     return output
 
 def main():
+    sermons: 'set[Sermon]' = set()
     for num in range(start, end+1): # 141 pages to do
-        processMainPageByIdx(num)
+        sermons.update(processMainPageByIdx(num))
+
+    tags = set()
+    missingTagCount = 0
+    for sermon in sermons:
+        if len(sermon.tags) == 0:
+            missingTagCount += 1
+        else:
+            tags.update(sermon.tags)
+    print(missingTagCount)
+    print(tags)
+
 
 if __name__ == "__main__":
     start = 1
