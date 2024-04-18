@@ -110,7 +110,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
     if not hasattr(output, 'series'):
         output.series = ''
 
-    search = BOOK_REGEX.search(output.title)
+    search = BOOK_REGEX.search(output.title.replace(" ", ""))
     if search is not None:
         match = search.groups()
         if match[1] is None:
