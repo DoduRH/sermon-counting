@@ -42,7 +42,7 @@ class Sermon:
         return hash(f"{self.page}")
 
     def toCsv(self):
-        return f"{self.page},{self.title},{self.speaker},{self.date},{self.book},{self.verses.chapter_start},{self.verses.chapter_end},{self.verses.verse_start},{self.verses.verse_end},{self.tags},{self.series}"
+        return f'{self.page}|{self.title}|{self.speaker}|{self.date}|{self.book}|{self.verses.chapter_start}|{self.verses.chapter_end}|{self.verses.verse_start}|{self.verses.verse_end}|{self.tags}|{self.series}'
 
 BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
 CACHE = Path("cache")
@@ -86,7 +86,11 @@ def processTalkPage(pageUrl: str) -> Sermon:
 
     output.page = pageUrl
     output.title = soup.select_one('.exodus-main-title').text.strip()
-    output.speaker = soup.select_one('.exodus-sermon-speaker').text.strip()
+    speakerElement = soup.select_one('.exodus-sermon-speaker')
+    if speakerElement is not None:
+        output.speaker = speakerElement.text.strip()
+    else:
+        output.speaker = ""
     output.date = datetime.fromisoformat(soup.find('time').attrs['datetime'])
     bookElement = soup.select_one('.exodus-sermon-book')
     if bookElement is not None:
@@ -146,7 +150,11 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
     soup = BeautifulSoup(page, 'html.parser')
     section = soup.find('section')
     for article in section.find_all('article'):
-        output.add(processTalkPage(article.find('a').attrs['href']))
+        getPage(article.find('a').attrs['href'])
+        try:
+            output.add(processTalkPage(article.find('a').attrs['href']))
+        except Exception as e:
+            print(f"Error on {article.find('a').attrs['href']} {e}")
         pbar.update(1)
 
     return output
@@ -158,5 +166,5 @@ def main():
 if __name__ == "__main__":
     start = 1
     end = 141
-    pbar = tqdm(total=(end - start + 1) * 10)
-    main()
+    with tqdm(total=(end - start + 1) * 10) as pbar:
+        main()
