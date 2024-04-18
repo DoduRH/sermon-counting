@@ -159,7 +159,9 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 
     return output
 
-def main():
+start = 1
+end = 141
+with tqdm(total=(end - start + 1) * 10) as pbar:
     sermons: 'set[Sermon]' = set()
     for num in range(start, end+1): # 141 pages to do
         sermons.update(processMainPageByIdx(num))
@@ -174,9 +176,3 @@ def main():
     print(missingTagCount)
     print(tags)
 
-
-if __name__ == "__main__":
-    start = 1
-    end = 141
-    with tqdm(total=(end - start + 1) * 10) as pbar:
-        main()
