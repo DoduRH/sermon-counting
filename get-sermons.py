@@ -1,3 +1,5 @@
+# %%
+import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib import request
@@ -7,6 +9,7 @@ from time import sleep
 from tqdm import tqdm
 from dataclasses import dataclass
 
+# %%
 OUTPUT_FILE = "sermons.csv"
 
 @dataclass
@@ -41,16 +44,26 @@ class Sermon:
     def __hash__(self):
         return hash(f"{self.page}")
 
+    def to_dict(self):
+        out = {
+            'page': self.page,
+            'title': self.title,
+            'speaker': self.speaker,
+            'date': self.date,
+            'book': self.book,
+            'chapter_start': self.verses.chapter_start,
+            'chapter_end': self.verses.chapter_end,
+            'verse_start': self.verses.verse_start,
+            'verse_end': self.verses.verse_end,
+            'series': self.series,
+        }
+
+        for tag in tags:
+            out[tag] = tag in self.tags
+        return out
+
     def toCsv(self):
         return f'{self.page}|{self.title}|{self.speaker}|{self.date}|{self.book}|{self.verses.chapter_start}|{self.verses.chapter_end}|{self.verses.verse_start}|{self.verses.verse_end}|{self.tags}|{self.series}'
-
-BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
-CACHE = Path("cache")
-CACHE.mkdir(exist_ok=True, parents=True)
-
-BOOK_REGEX = re.compile(r'(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
-
-last_request = datetime.now()
 
 def getPage(page: str):
     page_cache = CACHE.joinpath(request.url2pathname(page.replace('https://', ""))).with_suffix(".html")
@@ -111,6 +124,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.series = ''
 
     search = BOOK_REGEX.search(output.title.replace(" ", ""))
+    search = None
     if search is not None:
         match = search.groups()
         if match[1] is None:
@@ -139,7 +153,6 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.verses.verse_start = -1
         output.verses.verse_end = -1
 
-    saveSermon(output)
     return output
 
 
@@ -159,6 +172,17 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 
     return output
 
+with open('all-books.txt') as f:
+    allBooks = f.readlines()
+
+BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
+CACHE = Path("cache")
+CACHE.mkdir(exist_ok=True, parents=True)
+
+BOOK_REGEX = re.compile(r'(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
+
+last_request = datetime.now()
+
 start = 1
 end = 141
 with tqdm(total=(end - start + 1) * 10) as pbar:
@@ -166,13 +190,26 @@ with tqdm(total=(end - start + 1) * 10) as pbar:
     for num in range(start, end+1): # 141 pages to do
         sermons.update(processMainPageByIdx(num))
 
-    tags = set()
-    missingTagCount = 0
-    for sermon in sermons:
-        if len(sermon.tags) == 0:
-            missingTagCount += 1
-        else:
-            tags.update(sermon.tags)
-    print(missingTagCount)
-    print(tags)
+# %%
+tags = set()
+missingTagCount = 0
+for sermon in sermons:
+    if len(sermon.tags) == 0:
+        missingTagCount += 1
+    else:
+        tags.update(sermon.tags)
+print(missingTagCount)
+print(tags)
 
+# %%
+data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
+data
+# %%
+westbury = data[(data['Emmanuel Westbury'] | data['EW Students'] | data['Weekend Away'])]
+bishopston = data[(data['Emmanuel Bishopston'])]
+center = data[(data['Emmanuel City Centre'] | data['ECC'])]
+
+print("Sermon Counts")
+print(f"Westbury: {westbury.shape[0]}")
+print(f"Bishopston: {bishopston.shape[0]}")
+print(f"ECC: {center.shape[0]}")
