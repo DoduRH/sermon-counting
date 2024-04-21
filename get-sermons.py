@@ -8,6 +8,8 @@ import re
 from time import sleep
 from tqdm import tqdm
 from dataclasses import dataclass
+import numpy as np
+from pytz import timezone
 
 # %%
 OUTPUT_FILE = "sermons.csv"
@@ -36,6 +38,7 @@ class Sermon:
     verses: Verses
     tags: 'list[str]'
     series: str
+    audio_url: str
 
     def __init__(self):
         self.verses = Verses()
@@ -56,6 +59,7 @@ class Sermon:
             'verse_start': self.verses.verse_start,
             'verse_end': self.verses.verse_end,
             'series': self.series,
+            'audio_url': self.audio_url,
         }
 
         for tag in tags:
@@ -104,7 +108,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.speaker = speakerElement.text.strip()
     else:
         output.speaker = ""
-    output.date = datetime.fromisoformat(soup.find('time').attrs['datetime'])
+    output.date = np.datetime64(soup.find('time').attrs['datetime'])
     bookElement = soup.select_one('.exodus-sermon-book')
     if bookElement is not None:
         output.book = bookElement.text.strip()
@@ -153,6 +157,19 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.verses.verse_start = -1
         output.verses.verse_end = -1
 
+    audio = soup.select('audio')
+    if len(audio) >= 2:
+        raise AssertionError("Multiple audio sources detected", output.title, output.page)
+    
+    if len(audio) == 1:
+        audio = audio[0]
+        if audio.source != None:
+            audio = audio.source
+        if audio['src'] != None:
+            output.audio_url = audio['src']
+    if not hasattr(output, 'audio_url'):
+        output.audio_url = ''
+
     return output
 
 
@@ -164,10 +181,7 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
     section = soup.find('section')
     for article in section.find_all('article'):
         getPage(article.find('a').attrs['href'])
-        try:
-            output.add(processTalkPage(article.find('a').attrs['href']))
-        except Exception as e:
-            print(f"Error on {article.find('a').attrs['href']} {e}")
+        output.add(processTalkPage(article.find('a').attrs['href']))
         pbar.update(1)
 
     return output
@@ -205,11 +219,25 @@ print(tags)
 data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
 data
 # %%
-westbury = data[(data['Emmanuel Westbury'] | data['EW Students'] | data['Weekend Away'])]
-bishopston = data[(data['Emmanuel Bishopston'])]
-center = data[(data['Emmanuel City Centre'] | data['ECC'])]
-
+# Sermon Counts
 print("Sermon Counts")
+westburyMask = (data['Emmanuel Westbury'] | data['EW Students'] | data['Weekend Away'] | data['audio_url'].str.contains('westbury', case=False))
+westbury = data[westburyMask]
 print(f"Westbury: {westbury.shape[0]}")
+
+bishopstonMask = (data['Emmanuel Bishopston'] | data['audio_url'].str.contains('ashleydown', case=False))
+bishopston = data[bishopstonMask]
 print(f"Bishopston: {bishopston.shape[0]}")
-print(f"ECC: {center.shape[0]}")
+
+eccMask = (data['Emmanuel City Centre'] | data['ECC'] | data['audio_url'].str.contains('ecc', case=False))
+ecc = data[eccMask]
+print(f"ECC: {ecc.shape[0]}")
+
+unassigned = data[~(westburyMask | bishopstonMask | eccMask)]
+print(f"unassigned: {unassigned.shape[0]}")
+
+
+# %%
+# Find sermons from multiple churches
+two = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.astype(int)) == 2]
+three = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.astype(int)) == 3]
