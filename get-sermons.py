@@ -128,7 +128,6 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.series = ''
 
     search = BOOK_REGEX.search(output.title.replace(" ", ""))
-    search = None
     if search is not None:
         match = search.groups()
         if match[1] is None:
