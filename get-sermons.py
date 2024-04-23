@@ -1,17 +1,19 @@
 # %%
 from __future__ import annotations
-import pandas as pd
+
+import re
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from urllib import request
-from bs4 import BeautifulSoup
-import re
 from time import sleep
-from tqdm import tqdm
-from dataclasses import dataclass, field
-import numpy as np
-from pytz import timezone
+from urllib import request
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from bs4 import BeautifulSoup
+from pytz import timezone
+from tqdm import tqdm
 
 # %%
 OUTPUT_FILE = "sermons.csv"
