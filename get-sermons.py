@@ -1,4 +1,5 @@
 # %%
+from __future__ import annotations
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -7,7 +8,7 @@ from bs4 import BeautifulSoup
 import re
 from time import sleep
 from tqdm import tqdm
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 from pytz import timezone
 
@@ -15,7 +16,8 @@ from pytz import timezone
 OUTPUT_FILE = "sermons.csv"
 
 @dataclass
-class Verses:
+class Passage:
+    book: str
     chapter_start: int
     chapter_end: int
     verse_start: int
@@ -25,8 +27,32 @@ class Verses:
         return None
     
     def __repr__(self):
-        return f"{self.chapter_start}:{self.verse_start}-{self.chapter_end + ':' if self.chapter_end == self.chapter_start else ''}{self.verse_end}"
+        output = self.book
+        output += f" {self.chapter_start}:{self.verse_start}-"
+        if self.chapter_end != self.chapter_start:
+            output += f"{self.chapter_end}:"
+        output += str(self.verse_end)
+        return output
     
+    def __hash__(self):
+        return hash(str(self))
+    
+    def xInY(_, x: Passage, y: Passage):
+        return x.chapter_start in range(y.chapter_start, y.chapter_end+1) and x.verse_start in range(y.verse_start, y.verse_end+1)
+
+
+    def __contains__(self, other):
+        # Other in self
+        if type(other) != Passage:
+            return False
+        if self.book != other.book:
+            return False
+        if self.chapter_start == self.chapter_end and self.verse_start == self.verse_end:
+            return False
+        if other.chapter_start == other.chapter_end and other.verse_start == other.verse_end:
+            return self.xInY(other, self)
+        return False
+
 
 @dataclass
 class Sermon:
@@ -34,18 +60,30 @@ class Sermon:
     title: str
     speaker: str
     date: datetime
-    book: str
-    verses: Verses
+    passages: 'set[Passage]'
     tags: 'list[str]'
     series: str
     audio_url: str
-
-    def __init__(self):
-        self.verses = Verses()
-        return None
+    description: str
     
+    def __init__(self):
+        self.passages = set()
+        return None
+
     def __hash__(self):
         return hash(f"{self.page}")
+
+    def addPassage(self, newPassage: Passage):
+        a = 5
+        for passage in self.passages:
+            # other in self
+            if newPassage in passage:
+                return
+            if passage in newPassage:
+                self.passages.add(newPassage)
+                self.passages.remove(passage)
+                return
+        self.passages.add(newPassage)
 
     def to_dict(self):
         out = {
@@ -53,21 +91,23 @@ class Sermon:
             'title': self.title,
             'speaker': self.speaker,
             'date': self.date,
-            'book': self.book,
-            'chapter_start': self.verses.chapter_start,
-            'chapter_end': self.verses.chapter_end,
-            'verse_start': self.verses.verse_start,
-            'verse_end': self.verses.verse_end,
             'series': self.series,
             'audio_url': self.audio_url,
         }
+
+        for i, passage in enumerate(self.passages):
+            out[f'book_{i}'] = passage.book
+            out[f'chapter_start_{i}'] = passage.chapter_start
+            out[f'chapter_end_{i}'] = passage.chapter_end
+            out[f'verse_start_{i}'] = passage.verse_start
+            out[f'verse_end_{i}'] = passage.verse_end
 
         for tag in tags:
             out[tag] = tag in self.tags
         return out
 
     def toCsv(self):
-        return f'{self.page}|{self.title}|{self.speaker}|{self.date}|{self.book}|{self.verses.chapter_start}|{self.verses.chapter_end}|{self.verses.verse_start}|{self.verses.verse_end}|{self.tags}|{self.series}'
+        return f'{self.page}|{self.title}|{self.speaker}|{self.date}|{self.book}|{self.passages.chapter_start}|{self.passages.chapter_end}|{self.passages.verse_start}|{self.passages.verse_end}|{self.tags}|{self.series}'
 
 def getPage(page: str):
     page_cache = CACHE.joinpath(request.url2pathname(page.replace('https://', ""))).with_suffix(".html")
@@ -109,11 +149,11 @@ def processTalkPage(pageUrl: str) -> Sermon:
     else:
         output.speaker = ""
     output.date = np.datetime64(soup.find('time').attrs['datetime'])
-    bookElement = soup.select_one('.exodus-sermon-book')
-    if bookElement is not None:
-        output.book = bookElement.text.strip()
-    else:
-        output.book = ''
+    # bookElement = soup.select_one('.exodus-sermon-book')
+    # if bookElement is not None:
+    #     output.book = bookElement.text.strip()
+    # else:
+    #     output.book = ''
 
     # Process end tags
     for props in soup.select('.exodus-content-icon'):
@@ -127,34 +167,46 @@ def processTalkPage(pageUrl: str) -> Sermon:
     if not hasattr(output, 'series'):
         output.series = ''
 
-    search = BOOK_REGEX.search(output.title.replace(" ", ""))
-    if search is not None:
-        match = search.groups()
-        if match[1] is None:
-            output.verses.chapter_start = match[0]
-            output.verses.chapter_end = match[0]
-            output.verses.verse_start = -1
-            output.verses.verse_end = -1
-        if match[2] is None:
-            output.verses.chapter_start = match[0]
-            output.verses.chapter_end = match[0]
-            output.verses.verse_start = match[1]
-            output.verses.verse_end = match[1]
-        elif match[3] is None:
-            output.verses.chapter_start = match[0]
-            output.verses.chapter_end = match[0]
-            output.verses.verse_start = match[1]
-            output.verses.verse_end = match[2]
-        else:
-            output.verses.chapter_start = match[0]
-            output.verses.verse_start = match[1]
-            output.verses.chapter_end = match[2]
-            output.verses.verse_end = match[3]
-    else:
-        output.verses.chapter_start = -1
-        output.verses.chapter_end = -1
-        output.verses.verse_start = -1
-        output.verses.verse_end = -1
+    descriptionSelector = soup.select('.exodus-entry-content')
+    allText = output.title.lower()
+    if len(descriptionSelector) >= 1:
+        output.description = descriptionSelector[0].text
+        allText += (" " + output.description).lower()
+    for bibleBook in allBooks:
+        split = allText.split(bibleBook)
+        if len(split) >= 2:
+            for sec in split[1:]:
+                passage = Passage()
+                passage.book = bibleBook
+                search = BOOK_REGEX.search(sec.replace(" ", "").split("\xa0", 1)[0])
+                if search is not None:
+                    match = search.groups()
+                    if match[1] is None:
+                        passage.chapter_start = int(match[0])
+                        passage.chapter_end = int(match[0])
+                        passage.verse_start = int(-1)
+                        passage.verse_end = int(-1)
+                    elif match[2] is None:
+                        passage.chapter_start = int(match[0])
+                        passage.chapter_end = int(match[0])
+                        passage.verse_start = int(match[1])
+                        passage.verse_end = int(match[1])
+                    elif match[3] is None:
+                        passage.chapter_start = int(match[0])
+                        passage.chapter_end = int(match[0])
+                        passage.verse_start = int(match[1])
+                        passage.verse_end = int(match[2])
+                    else:
+                        passage.chapter_start = int(match[0])
+                        passage.verse_start = int(match[1])
+                        passage.chapter_end = int(match[2])
+                        passage.verse_end = int(match[3])
+                    output.addPassage(passage)
+                # else:
+                #     passage.chapter_start = -1
+                #     passage.chapter_end = -1
+                #     passage.verse_start = -1
+                #     passage.verse_end = -1
 
     audio = soup.select('audio')
     if len(audio) >= 2:
@@ -187,13 +239,16 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 
 with open('all-books.txt') as f:
     allBooks = f.readlines()
+for i, book in enumerate(allBooks):
+    allBooks[i] = book.strip().lower()
 
 BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
 CACHE = Path("cache")
 CACHE.mkdir(exist_ok=True, parents=True)
 
-BOOK_REGEX = re.compile(r'(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
+BOOK_REGEX = re.compile(r'^(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
 
+# %%
 last_request = datetime.now()
 
 start = 1
@@ -203,7 +258,6 @@ with tqdm(total=(end - start + 1) * 10) as pbar:
     for num in range(start, end+1): # 141 pages to do
         sermons.update(processMainPageByIdx(num))
 
-# %%
 tags = set()
 missingTagCount = 0
 for sermon in sermons:
@@ -211,12 +265,10 @@ for sermon in sermons:
         missingTagCount += 1
     else:
         tags.update(sermon.tags)
-print(missingTagCount)
-print(tags)
 
-# %%
 data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
 data
+
 # %%
 # Sermon Counts
 print("Sermon Counts")
@@ -240,3 +292,13 @@ print(f"unassigned: {unassigned.shape[0]}")
 # Find sermons from multiple churches
 two = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.astype(int)) == 2]
 three = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.astype(int)) == 3]
+
+# %%
+# Missing books
+emptyBook = data[data['book_0'].isna()]
+emptyBook.to_csv("noBook.csv")
+emptyBook
+
+# %%
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/god-loves-the-unlovely-1-john-410/')
+a.passages
