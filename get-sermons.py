@@ -318,13 +318,12 @@ three = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.as
 
 # %%
 # Missing books
-emptyBook = data[data['passage_count'] == 0]
-emptyBook.to_csv("noBook.csv")
-emptyBook
+emptyBookMask = data['passage_count'] == 0
+data[emptyBookMask]
 
 # %%
 # Missing Westbury Books
-emptyBook[westburyMask]
+data[westburyMask & emptyBookMask]
 
 # %%
 a = processTalkPage('https://emmanuelbristol.org.uk/sermons/praying-for-power/')
@@ -332,3 +331,12 @@ a.passages
 
 # %%
 data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
+
+# %%
+# Find specific book
+mask = data['book_0'] == 'Ecclesiastes'
+
+for i in range(1, 13):
+    mask = mask | (data[f'book_{i}'] == 'Ecclesiastes')
+
+data[mask & westburyMask].title
