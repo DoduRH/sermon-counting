@@ -293,6 +293,15 @@ data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
 data
 
 # %%
+# save data
+data.to_feather("data.feather")
+
+# %%
+# Load data
+data = pd.read_feather("data.feather")
+
+
+# %%
 # Sermon Counts
 print("Sermon Counts")
 westburyMask = (data['Emmanuel Westbury'] | data['EW Students'] | data['Weekend Away'] | data['audio_url'].str.contains('westbury', case=False))
