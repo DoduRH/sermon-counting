@@ -47,7 +47,9 @@ Romans
 2 Corinthians
 Galatians
 Ephesians
+Eph
 Philippians
+Phil
 Colossians
 1 Thessalonians
 2 Thessalonians

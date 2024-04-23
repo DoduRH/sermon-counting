@@ -11,6 +11,7 @@ from tqdm import tqdm
 from dataclasses import dataclass, field
 import numpy as np
 from pytz import timezone
+import matplotlib.pyplot as plt
 
 # %%
 OUTPUT_FILE = "sermons.csv"
@@ -37,9 +38,24 @@ class Passage:
     def __hash__(self):
         return hash(str(self))
     
+    def __setattr__(self, name: str, value: request.Any) -> None:
+        if name == 'book':
+            if value == 'eph':
+                value = 'ephesians'
+            if value == 'phil':
+                value = 'philippians'
+            value: str = value.title()
+        object.__setattr__(self, name, value)
+
     def xInY(_, x: Passage, y: Passage):
         return x.chapter_start in range(y.chapter_start, y.chapter_end+1) and x.verse_start in range(y.verse_start, y.verse_end+1)
 
+
+    def sameChapter(self, other: Passage):
+        return self.chapter_start == other.chapter_start and \
+            self.chapter_end == other.chapter_end and \
+            self.verse_start == other.verse_start and \
+            self.verse_end == other.verse_end 
 
     def __contains__(self, other):
         # Other in self
@@ -74,7 +90,6 @@ class Sermon:
         return hash(f"{self.page}")
 
     def addPassage(self, newPassage: Passage):
-        a = 5
         for passage in self.passages:
             # other in self
             if newPassage in passage:
@@ -93,6 +108,7 @@ class Sermon:
             'date': self.date,
             'series': self.series,
             'audio_url': self.audio_url,
+            'passage_count': len(self.passages),
         }
 
         for i, passage in enumerate(self.passages):
@@ -172,13 +188,15 @@ def processTalkPage(pageUrl: str) -> Sermon:
     if len(descriptionSelector) >= 1:
         output.description = descriptionSelector[0].text
         allText += (" " + output.description).lower()
-    for bibleBook in allBooks:
+    for bibleBook in reversed(allBooks):
         split = allText.split(bibleBook)
         if len(split) >= 2:
             for sec in split[1:]:
                 passage = Passage()
                 passage.book = bibleBook
-                search = BOOK_REGEX.search(sec.replace(" ", "").split("\xa0", 1)[0])
+                search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
+                if search is None:
+                    search = TITLE_REGEX.search(output.title.replace(":", "").replace(" ", ""))
                 if search is not None:
                     match = search.groups()
                     if match[1] is None:
@@ -201,7 +219,9 @@ def processTalkPage(pageUrl: str) -> Sermon:
                         passage.verse_start = int(match[1])
                         passage.chapter_end = int(match[2])
                         passage.verse_end = int(match[3])
-                    output.addPassage(passage)
+                    # Skip if text 1 john is already in and book is john
+                    if not any([bibleBook in x.book and x.sameChapter(passage) for x in output.passages]):
+                        output.addPassage(passage)
                 # else:
                 #     passage.chapter_start = -1
                 #     passage.chapter_end = -1
@@ -247,6 +267,7 @@ CACHE = Path("cache")
 CACHE.mkdir(exist_ok=True, parents=True)
 
 BOOK_REGEX = re.compile(r'^(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
+TITLE_REGEX = re.compile(r'(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
 
 # %%
 last_request = datetime.now()
@@ -295,10 +316,17 @@ three = data[(westburyMask.astype(int) + bishopstonMask.astype(int) + eccMask.as
 
 # %%
 # Missing books
-emptyBook = data[data['book_0'].isna()]
+emptyBook = data[data['passage_count'] == 0]
 emptyBook.to_csv("noBook.csv")
 emptyBook
 
 # %%
-a = processTalkPage('https://emmanuelbristol.org.uk/sermons/god-loves-the-unlovely-1-john-410/')
+# Missing Westbury Books
+emptyBook[westburyMask]
+
+# %%
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/worthy-equal-and-different-various/')
 a.passages
+
+# %%
+data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
