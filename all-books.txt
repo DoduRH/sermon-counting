@@ -46,10 +46,10 @@ Romans
 1 Corinthians
 2 Corinthians
 Galatians
-Ephesians
 Eph
-Philippians
+Ephesians
 Phil
+Philippians
 Colossians
 1 Thessalonians
 2 Thessalonians

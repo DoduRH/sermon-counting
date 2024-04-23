@@ -14,6 +14,7 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from pytz import timezone
 from tqdm import tqdm
+from unidecode import unidecode
 
 # %%
 OUTPUT_FILE = "sermons.csv"
@@ -160,7 +161,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
     soup = BeautifulSoup(pageData, 'html.parser')
 
     output.page = pageUrl
-    output.title = soup.select_one('.exodus-main-title').text.strip()
+    output.title = soup.select_one('.exodus-main-title').text.strip().replace("–", "-")
     speakerElement = soup.select_one('.exodus-sermon-speaker')
     if speakerElement is not None:
         output.speaker = speakerElement.text.strip()
@@ -188,7 +189,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
     descriptionSelector = soup.select('.exodus-entry-content')
     allText = output.title.lower()
     if len(descriptionSelector) >= 1:
-        output.description = descriptionSelector[0].text
+        output.description = descriptionSelector[0].text.replace("–", "-")
         allText += (" " + output.description).lower()
     for bibleBook in reversed(allBooks):
         split = allText.split(bibleBook)
@@ -198,7 +199,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
                 passage.book = bibleBook
                 search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
                 if search is None:
-                    search = TITLE_REGEX.search(output.title.replace(":", "").replace(" ", ""))
+                    search = TITLE_REGEX.search(output.title.replace(" ", ""))
                 if search is not None:
                     match = search.groups()
                     if match[1] is None:
@@ -336,7 +337,7 @@ emptyBook
 emptyBook[westburyMask]
 
 # %%
-a = processTalkPage('https://emmanuelbristol.org.uk/sermons/worthy-equal-and-different-various/')
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/praying-for-power/')
 a.passages
 
 # %%

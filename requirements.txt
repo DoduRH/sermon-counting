@@ -1,0 +1,4 @@
+pandas
+pyarrow
+unidecode
+bs4
