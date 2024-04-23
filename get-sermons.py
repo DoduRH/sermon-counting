@@ -168,11 +168,6 @@ def processTalkPage(pageUrl: str) -> Sermon:
     else:
         output.speaker = ""
     output.date = np.datetime64(soup.find('time').attrs['datetime'])
-    # bookElement = soup.select_one('.exodus-sermon-book')
-    # if bookElement is not None:
-    #     output.book = bookElement.text.strip()
-    # else:
-    #     output.book = ''
 
     # Process end tags
     for props in soup.select('.exodus-content-icon'):
@@ -225,11 +220,6 @@ def processTalkPage(pageUrl: str) -> Sermon:
                     # Skip if text 1 john is already in and book is john
                     if not any([bibleBook in x.book and x.sameChapter(passage) for x in output.passages]):
                         output.addPassage(passage)
-                # else:
-                #     passage.chapter_start = -1
-                #     passage.chapter_end = -1
-                #     passage.verse_start = -1
-                #     passage.verse_end = -1
 
     audio = soup.select('audio')
     if len(audio) >= 2:
