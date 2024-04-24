@@ -2,19 +2,18 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
 from urllib import request
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
-from pytz import timezone
 from tqdm import tqdm
-from unidecode import unidecode
+import esv_ranges
+import plotly as px
 
 # %%
 OUTPUT_FILE = "sermons.csv"
@@ -93,6 +92,9 @@ class Sermon:
         return hash(f"{self.page}")
 
     def addPassage(self, newPassage: Passage):
+        if newPassage.chapter_start == newPassage.chapter_end and newPassage.verse_start > newPassage.verse_end:
+            print(f"Backwards passage {newPassage}")
+            return
         for passage in self.passages:
             # other in self
             if newPassage in passage:
@@ -193,7 +195,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
                 passage = Passage()
                 passage.book = bibleBook
                 search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
-                if search is None:
+                if search is None and bibleBook in output.title:
                     search = TITLE_REGEX.search(output.title.replace(" ", ""))
                 if search is not None:
                     match = search.groups()
@@ -252,8 +254,8 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 
 with open('all-books.txt') as f:
     allBooks = f.readlines()
-for i, book in enumerate(allBooks):
-    allBooks[i] = book.strip().lower()
+for i, bookName in enumerate(allBooks):
+    allBooks[i] = bookName.strip().lower()
 
 BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
 CACHE = Path("cache")
@@ -326,7 +328,7 @@ data[emptyBookMask]
 data[westburyMask & emptyBookMask]
 
 # %%
-a = processTalkPage('https://emmanuelbristol.org.uk/sermons/praying-for-power/')
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/perfect-in-christ/')
 a.passages
 
 # %%
@@ -334,9 +336,85 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 
 # %%
 # Find specific book
-mask = data['book_0'] == 'Ecclesiastes'
+mask = pd.Series(False, index=data.index)
 
-for i in range(1, 13):
-    mask = mask | (data[f'book_{i}'] == 'Ecclesiastes')
+for i in range(0, 13):
+    mask = mask | (data[f'book_{i}'] == 'Jeremiah')
 
 data[mask & westburyMask].title
+
+
+# %%
+# Create visited dataframe
+
+bible_data = {
+    'Book': [],
+    'Chapter': [],
+    'Verse': [],
+    'Visited': 0,
+}
+
+bookToIndex = {}
+indexToBook = {}
+
+for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_data[1:]):
+    bookToIndex[bookName.title()] = i
+    indexToBook[i] = bookName.title()
+    # Remove None padding
+    verseCounts = verseCounts[1:]
+    for chapterNum, chapterVerseCount in enumerate(verseCounts, start=1):
+        bible_data['Book'].extend([i] * chapterVerseCount)
+        bible_data['Chapter'].extend([chapterNum] * chapterVerseCount)
+        bible_data['Verse'].extend(range(1, chapterVerseCount + 1))
+
+visited = pd.DataFrame(bible_data)
+
+visited.set_index(['Book', 'Chapter', 'Verse'], inplace=True)
+visited = visited.T
+visited
+
+# %%
+# Create visited Series
+
+bible_data = {
+}
+
+bookToIndex = {}
+indexToBook = {}
+
+for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_data[1:]):
+    bookToIndex[bookName.title()] = i
+    indexToBook[i] = bookName.title()
+    # Remove None padding
+    verseCounts = verseCounts[1:]
+    for chapterNum, chapterVerseCount in enumerate(verseCounts, start=1):
+        for verse in range(1, chapterVerseCount + 1):
+            bible_data[(i, chapterNum, verse)] = 0
+        # bible_data['Book'].extend([i] * chapterVerseCount)
+        # bible_data['Chapter'].extend([chapterNum] * chapterVerseCount)
+        # bible_data['Verse'].extend(range(1, chapterVerseCount + 1))
+
+visited = pd.Series(bible_data)
+
+visited
+
+# %%
+# Mark books we have been to
+for i, sermonData in tqdm(data.iterrows(), total=data.shape[0]):
+    for i in range(sermonData['passage_count']):
+        sliceStart = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_start_{i}'], sermonData[f'verse_start_{i}'])
+        sliceEnd = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_end_{i}'], sermonData[f'verse_end_{i}'])
+        visited[sliceStart:sliceEnd] += 1
+
+visited.sum()
+
+# %%
+# 
+v = visited.T.copy()
+v.index = [f'{indexToBook[x[0]]} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
+v
+
+pd.set_option('plotting.backend', 'plotly')
+fig = v.plot.line()
+fig.write_html('output.html')
+fig
