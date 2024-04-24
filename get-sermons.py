@@ -338,8 +338,8 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 # Find specific book
 mask = pd.Series(False, index=data.index)
 
-for i in range(0, 13):
-    mask = mask | (data[f'book_{i}'] == 'Jeremiah')
+for i in range(data['passage_count'].max()):
+    mask = mask | (data[f'book_{i}'] == 'Lamentations')
 
 data[mask & westburyMask].title
 
@@ -396,25 +396,25 @@ for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_dat
 
 visited = pd.Series(bible_data)
 
-visited
-
 # %%
 # Mark books we have been to
-for i, sermonData in tqdm(data.iterrows(), total=data.shape[0]):
-    for i in range(sermonData['passage_count']):
-        sliceStart = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_start_{i}'], sermonData[f'verse_start_{i}'])
-        sliceEnd = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_end_{i}'], sermonData[f'verse_end_{i}'])
-        visited[sliceStart:sliceEnd] += 1
+for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'EW'], [data[bishopstonMask], 'EB']]:
+    visited = pd.Series(0, index=visited.index)
+    for i, sermonData in tqdm(d.iterrows(), total=d.shape[0]):
+        for i in range(sermonData['passage_count']):
+            sliceStart = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_start_{i}'], sermonData[f'verse_start_{i}'])
+            sliceEnd = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_end_{i}'], sermonData[f'verse_end_{i}'])
+            visited[sliceStart:sliceEnd] += 1
 
-visited.sum()
+    visited.sum()
+
+    v = visited.T.copy()
+    v.index = [f'{indexToBook[x[0]]} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
+    v
+
+    pd.set_option('plotting.backend', 'plotly')
+    fig = v.plot.line()
+    fig.write_html(f'output/{church}.html')
+    fig
 
 # %%
-# 
-v = visited.T.copy()
-v.index = [f'{indexToBook[x[0]]} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
-v
-
-pd.set_option('plotting.backend', 'plotly')
-fig = v.plot.line()
-fig.write_html('output.html')
-fig
