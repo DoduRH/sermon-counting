@@ -195,7 +195,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
                 passage = Passage()
                 passage.book = bibleBook
                 search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
-                if search is None and bibleBook in output.title:
+                if search is None and bibleBook in output.title.lower():
                     search = TITLE_REGEX.search(output.title.replace(" ", ""))
                 if search is not None:
                     match = search.groups()
@@ -328,7 +328,7 @@ data[emptyBookMask]
 data[westburyMask & emptyBookMask]
 
 # %%
-a = processTalkPage('https://emmanuelbristol.org.uk/sermons/perfect-in-christ/')
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/haggai-give-careful-thought-to-your-ways-ch-210-23/')
 a.passages
 
 # %%
@@ -342,6 +342,20 @@ for i in range(data['passage_count'].max()):
     mask = mask | (data[f'book_{i}'] == 'Lamentations')
 
 data[mask & westburyMask].title
+
+# %%
+# Find unvisited books
+print("Unvisited books")
+for book in allBooks:
+    # Skip abreviated books
+    if len(book) == 3:
+        continue
+    mask = pd.Series(False, index=data.index)
+
+    for i in range(data['passage_count'].max()):
+        mask = mask | (data[f'book_{i}'] == book.title())
+    if mask.sum() == 0:
+        print(book.title())
 
 
 # %%
@@ -371,7 +385,6 @@ visited = pd.DataFrame(bible_data)
 
 visited.set_index(['Book', 'Chapter', 'Verse'], inplace=True)
 visited = visited.T
-visited
 
 # %%
 # Create visited Series
