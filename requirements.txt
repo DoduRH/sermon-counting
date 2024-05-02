@@ -2,3 +2,5 @@ pandas
 pyarrow
 unidecode
 bs4
+plotly
+tqdm

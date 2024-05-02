@@ -4,5 +4,6 @@ sermons.csv
 noBook.csv
 testing.csv
 *.feather
-/__pycache__
+**/__pycache__
 /output
+/venv
