@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 
 class Book(Enum):
@@ -71,7 +72,12 @@ class Book(Enum):
     def getName(self):
         return self.value[0]
     
+    def isSubName(self, other: Book) -> bool:
+        return other.getName() in self.getName()
+        
+    
     def __contains__(self, other) -> bool:
-        if isinstance(other, str):
-            return any([other in x for x in self.value])
+        if isinstance(other, Book):
+            return any([other in bookName for bookName in self.value])
+        return False
     

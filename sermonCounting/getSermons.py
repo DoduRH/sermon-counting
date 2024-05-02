@@ -77,7 +77,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
     if len(descriptionSelector) >= 1:
         output.description = descriptionSelector[0].text.replace("–", "-")
         allText += " " + output.description.title().split("Footnotes")[0]
-    for bibleBookGroup in Book:
+    for bibleBookGroup in reversed(Book):
         for bibleBook in bibleBookGroup.value:
             split = allText.split(bibleBook)
             if len(split) >= 2:
@@ -110,7 +110,7 @@ def processTalkPage(pageUrl: str) -> Sermon:
                             passage.chapter_end = int(match[2])
                             passage.verse_end = int(match[3])
                         # Skip if text 1 john is already in and book is john
-                        if not any([bibleBook in x.book and x.sameChapter(passage) for x in output.passages]):
+                        if not any([x.book.isSubName(bibleBookGroup) and x.sameVerseAndChapterNumbers(passage) for x in output.passages]):
                             output.addPassage(passage)
 
     audio = soup.select('audio')

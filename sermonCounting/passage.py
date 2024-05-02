@@ -49,7 +49,7 @@ class Passage:
         return x.chapter_start in range(y.chapter_start, y.chapter_end+1) and x.verse_start in range(y.verse_start, y.verse_end+1)
 
 
-    def sameChapter(self, other: Passage):
+    def sameVerseAndChapterNumbers(self, other: Passage):
         return self.chapter_start == other.chapter_start and \
             self.chapter_end == other.chapter_end and \
             self.verse_start == other.verse_start and \
