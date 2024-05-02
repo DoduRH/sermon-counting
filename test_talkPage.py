@@ -3,7 +3,7 @@ from book import Book
 from sermonCounting.getSermons import processTalkPage
 from sermonCounting.passage import Passage
 
-class TestPassageCollection(unittest.TestCase):
+class TestTrickyPassageCollection(unittest.TestCase):
 
     def test_intimacy_with_another(self):
         res = processTalkPage('https://emmanuelbristol.org.uk/sermons/intimacy-with-another/')
@@ -15,9 +15,7 @@ class TestPassageCollection(unittest.TestCase):
         expected = {Passage(Book.REVELATION, 8, 6, 9, 21)}
         self.assertSequenceEqual(res.passages, expected)
 
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+    def test_the_answer_to_death_psalm_139(self):
+        res = processTalkPage('https://emmanuelbristol.org.uk/sermons/the-answer-to-death-psalm-139/')
+        expected = {Passage(Book.PSALM, 139, 1, 139, 24)}
+        self.assertSequenceEqual(res.passages, expected)
