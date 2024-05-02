@@ -30,7 +30,7 @@ class Passage:
         return output
     
     def __hash__(self):
-        return 1
+        return hash(str(self))
 
     def __eq__(self, other):
         if isinstance(other, Passage):
