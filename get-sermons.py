@@ -1,12 +1,10 @@
 # %%
 from __future__ import annotations
 
-import re
 from datetime import datetime
 import pandas as pd
 from tqdm import tqdm
 import esv_ranges
-import plotly.express as px
 
 from importlib import reload
 
@@ -25,6 +23,7 @@ with tqdm(total=(end - start + 1) * 10) as pbar:
     sermons: 'set[Sermon]' = set()
     for num in range(start, end+1): # 141 pages to do
         sermons.update(processMainPageByIdx(num))
+        pbar.update(10)
 
 tags = set()
 missingTagCount = 0
@@ -91,7 +90,7 @@ for book in Book:
     mask = pd.Series(False, index=d.index)
 
     for i in range(d['passage_count'].max()):
-        mask = mask | (d[f'book_{i}'] == book.getName().title())
+        mask = mask | (d[f'book_{i}'] == book)
     if mask.sum() == 0:
         print(book.value[0].title())
 

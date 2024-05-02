@@ -138,6 +138,5 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
     for article in section.find_all('article'):
         getPage(article.find('a').attrs['href'])
         output.add(processTalkPage(article.find('a').attrs['href']))
-        pbar.update(1)
 
     return output
