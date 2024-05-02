@@ -274,11 +274,6 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 
     return output
 
-with open('all-books.txt') as f:
-    allBooks = f.readlines()
-for i, bookName in enumerate(allBooks):
-    allBooks[i] = bookName.strip().title()
-
 BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
 CACHE = Path("cache")
 CACHE.mkdir(exist_ok=True, parents=True)
