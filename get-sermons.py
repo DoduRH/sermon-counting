@@ -86,14 +86,14 @@ print(data[mask & westburyMask].title)
 # %%
 # Find unvisited books
 print("Unvisited books")
-d = data[westburyMask]
+d = data[westburyMask & (data.date > datetime(2021,1,1))]
 for book in Book:
     # Skip abreviated books
     mask = pd.Series(False, index=d.index)
 
     for i in range(d['passage_count'].max()):
         mask = mask | (d[f'book_{i}'] == book)
-    if mask.sum() == 0:
+    if mask.sum() != 0:
         print(book.value[0].title())
 
 
@@ -183,7 +183,7 @@ for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'E
 # Create with slider
 visited = pd.DataFrame(0, index=visited.index, columns=range(2007, datetime.now().year+1))
 for year in visited.columns:
-    filtered = data[data['date'] < datetime(year, 1, 1)]
+    filtered = data[data['date'] > datetime(year, 1, 1)]
     for i, sermonData in tqdm(filtered.iterrows(), total=filtered.shape[0], desc=f'{year}'):
         for i in range(sermonData['passage_count']):
             sliceStart = (
@@ -235,16 +235,16 @@ sliders = [dict(
 _, tickPositions = np.unique(visited.index.get_level_values(0), return_index=True)
 
 fig.update_layout(
-    sliders=sliders, title="Animated Line Plot",
+    sliders=sliders, title="",
     yaxis_title="Number of Visits", 
     yaxis_range=[0, v.max().max()+1],
     xaxis=dict(
         title="",
-        tickmode='array',
-        tickvals=tickPositions,
-        ticktext=[b.getName() for b in Book],
+        nticks=10
+        # tickmode='array',
+        # tickvals=tickPositions,
+        # ticktext=[b.getName() for b in Book],
     ),
-    height=550,  # Adjust top and bottom margins
 )
 
 # Show the plot
