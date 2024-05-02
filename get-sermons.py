@@ -13,14 +13,21 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 import esv_ranges
-import plotly as px
+import plotly.express as px
+
+from importlib import reload
+
+reload(esv_ranges)
+import book as BookEnum
+reload(BookEnum)
+from book import Book
 
 # %%
 OUTPUT_FILE = "sermons.csv"
 
 @dataclass
 class Passage:
-    book: str
+    book: Book
     chapter_start: int
     chapter_end: int
     verse_start: int
@@ -30,7 +37,7 @@ class Passage:
         return None
     
     def __repr__(self):
-        output = self.book
+        output = self.book.getName()
         output += f" {self.chapter_start}:{self.verse_start}-"
         if self.chapter_end != self.chapter_start:
             output += f"{self.chapter_end}:"
@@ -39,17 +46,10 @@ class Passage:
     
     def __hash__(self):
         return hash(str(self))
-    
-    def __setattr__(self, name: str, value: request.Any) -> None:
-        if name == 'book':
-            if value == 'eph':
-                value = 'ephesians'
-            if value == 'phil':
-                value = 'philippians'
-            value: str = value.title()
-        object.__setattr__(self, name, value)
 
     def xInY(_, x: Passage, y: Passage):
+        if x.verse_start == x.verse_end == -1:
+            return x.chapter_start in range(y.chapter_start, y.chapter_end+1)
         return x.chapter_start in range(y.chapter_start, y.chapter_end+1) and x.verse_start in range(y.verse_start, y.verse_end+1)
 
 
@@ -84,8 +84,29 @@ class Sermon:
     audio_url: str
     description: str
     
-    def __init__(self):
+    def __init__(self, data=None):
         self.passages = set()
+        if data is None:
+            return None
+        
+        self.page = data.page
+        self.title = data.title
+        self.speaker = data.speaker
+        self.date = data.date
+        self.tags = []
+        self.series = data.series
+        self.audio_url = data.audio_url
+        self.description = None
+        
+        for i in range(data.passage_count):
+            passage = Passage()
+            passage.book = data[f'book_{i}']
+            passage.chapter_start = data[f'chapter_start_{i}']
+            passage.chapter_end = data[f'chapter_end_{i}']
+            passage.verse_start = data[f'verse_start_{i}']
+            passage.verse_end = data[f'verse_end_{i}']
+            self.passages.add(passage)
+        
         return None
 
     def __hash__(self):
@@ -184,44 +205,45 @@ def processTalkPage(pageUrl: str) -> Sermon:
         output.series = ''
 
     descriptionSelector = soup.select('.exodus-entry-content')
-    allText = output.title.lower()
+    allText = output.title.title()
     if len(descriptionSelector) >= 1:
         output.description = descriptionSelector[0].text.replace("–", "-")
-        allText += (" " + output.description).lower()
-    for bibleBook in reversed(allBooks):
-        split = allText.split(bibleBook)
-        if len(split) >= 2:
-            for sec in split[1:]:
-                passage = Passage()
-                passage.book = bibleBook
-                search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
-                if search is None and bibleBook in output.title.lower():
-                    search = TITLE_REGEX.search(output.title.replace(" ", ""))
-                if search is not None:
-                    match = search.groups()
-                    if match[1] is None:
-                        passage.chapter_start = int(match[0])
-                        passage.chapter_end = int(match[0])
-                        passage.verse_start = int(-1)
-                        passage.verse_end = int(-1)
-                    elif match[2] is None:
-                        passage.chapter_start = int(match[0])
-                        passage.chapter_end = int(match[0])
-                        passage.verse_start = int(match[1])
-                        passage.verse_end = int(match[1])
-                    elif match[3] is None:
-                        passage.chapter_start = int(match[0])
-                        passage.chapter_end = int(match[0])
-                        passage.verse_start = int(match[1])
-                        passage.verse_end = int(match[2])
-                    else:
-                        passage.chapter_start = int(match[0])
-                        passage.verse_start = int(match[1])
-                        passage.chapter_end = int(match[2])
-                        passage.verse_end = int(match[3])
-                    # Skip if text 1 john is already in and book is john
-                    if not any([bibleBook in x.book and x.sameChapter(passage) for x in output.passages]):
-                        output.addPassage(passage)
+        allText += " " + output.description.title()
+    for bibleBookGroup in Book:
+        for bibleBook in bibleBookGroup.value:
+            split = allText.split(bibleBook)
+            if len(split) >= 2:
+                for sec in split[1:]:
+                    passage = Passage()
+                    passage.book = bibleBookGroup
+                    search = BOOK_REGEX.search(sec.removeprefix(":").replace(" ", "").split("\xa0", 1)[0])
+                    if search is None and bibleBook in REMOVE_PUNCTUATION.sub('', output.title).title().split(" "):
+                        search = TITLE_REGEX.search(output.title.replace(" ", ""))
+                    if search is not None:
+                        match = search.groups()
+                        if match[1] is None:
+                            passage.chapter_start = int(match[0])
+                            passage.chapter_end = int(match[0])
+                            passage.verse_start = int(-1)
+                            passage.verse_end = int(-1)
+                        elif match[2] is None:
+                            passage.chapter_start = int(match[0])
+                            passage.chapter_end = int(match[0])
+                            passage.verse_start = int(match[1])
+                            passage.verse_end = int(match[1])
+                        elif match[3] is None:
+                            passage.chapter_start = int(match[0])
+                            passage.chapter_end = int(match[0])
+                            passage.verse_start = int(match[1])
+                            passage.verse_end = int(match[2])
+                        else:
+                            passage.chapter_start = int(match[0])
+                            passage.verse_start = int(match[1])
+                            passage.chapter_end = int(match[2])
+                            passage.verse_end = int(match[3])
+                        # Skip if text 1 john is already in and book is john
+                        if not any([bibleBook in x.book and x.sameChapter(passage) for x in output.passages]):
+                            output.addPassage(passage)
 
     audio = soup.select('audio')
     if len(audio) >= 2:
@@ -255,7 +277,7 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
 with open('all-books.txt') as f:
     allBooks = f.readlines()
 for i, bookName in enumerate(allBooks):
-    allBooks[i] = bookName.strip().lower()
+    allBooks[i] = bookName.strip().title()
 
 BASE_URL = "https://emmanuelbristol.org.uk/talk-archive/page/"
 CACHE = Path("cache")
@@ -263,6 +285,7 @@ CACHE.mkdir(exist_ok=True, parents=True)
 
 BOOK_REGEX = re.compile(r'^(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
 TITLE_REGEX = re.compile(r'(\d{1,}):?(\d{1,})?-?(\d{1,})?:?(\d{1,})?')
+REMOVE_PUNCTUATION = re.compile(r'[^A-Za-z ]+')
 
 # %%
 last_request = datetime.now()
@@ -284,15 +307,6 @@ for sermon in sermons:
 
 data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
 data
-
-# %%
-# save data
-data.to_feather("data.feather")
-
-# %%
-# Load data
-data = pd.read_feather("data.feather")
-
 
 # %%
 # Sermon Counts
@@ -328,7 +342,7 @@ data[emptyBookMask]
 data[westburyMask & emptyBookMask]
 
 # %%
-a = processTalkPage('https://emmanuelbristol.org.uk/sermons/haggai-give-careful-thought-to-your-ways-ch-210-23/')
+a = processTalkPage('https://emmanuelbristol.org.uk/sermons/revelation-the-final-word-86-921/')
 a.passages
 
 # %%
@@ -339,23 +353,22 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | (data[f'book_{i}'] == 'Lamentations')
+    mask = mask | (data[f'book_{i}'].isin(Book.EZEKIEL.value))
 
 data[mask & westburyMask].title
 
 # %%
 # Find unvisited books
 print("Unvisited books")
-for book in allBooks:
+d = data[westburyMask]
+for book in Book:
     # Skip abreviated books
-    if len(book) == 3:
-        continue
-    mask = pd.Series(False, index=data.index)
+    mask = pd.Series(False, index=d.index)
 
-    for i in range(data['passage_count'].max()):
-        mask = mask | (data[f'book_{i}'] == book.title())
+    for i in range(d['passage_count'].max()):
+        mask = mask | (d[f'book_{i}'] == book.getName().title())
     if mask.sum() == 0:
-        print(book.title())
+        print(book.value[0].title())
 
 
 # %%
@@ -372,8 +385,8 @@ bookToIndex = {}
 indexToBook = {}
 
 for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_data[1:]):
-    bookToIndex[bookName.title()] = i
-    indexToBook[i] = bookName.title()
+    bookToIndex[bookName] = i
+    indexToBook[i] = bookName
     # Remove None padding
     verseCounts = verseCounts[1:]
     for chapterNum, chapterVerseCount in enumerate(verseCounts, start=1):
@@ -395,28 +408,38 @@ bible_data = {
 bookToIndex = {}
 indexToBook = {}
 
+chapVerse = {}
+
 for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_data[1:]):
-    bookToIndex[bookName.title()] = i
-    indexToBook[i] = bookName.title()
+    bookToIndex[bookName.name] = i
+    indexToBook[i] = bookName
     # Remove None padding
     verseCounts = verseCounts[1:]
+    chapVerse[bookName.name] = {}
     for chapterNum, chapterVerseCount in enumerate(verseCounts, start=1):
+        chapVerse[bookName.name][chapterNum] = chapterVerseCount
         for verse in range(1, chapterVerseCount + 1):
             bible_data[(i, chapterNum, verse)] = 0
-        # bible_data['Book'].extend([i] * chapterVerseCount)
-        # bible_data['Chapter'].extend([chapterNum] * chapterVerseCount)
-        # bible_data['Verse'].extend(range(1, chapterVerseCount + 1))
 
 visited = pd.Series(bible_data)
 
 # %%
 # Mark books we have been to
 for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'EW'], [data[bishopstonMask], 'EB']]:
+    church = 'all'
     visited = pd.Series(0, index=visited.index)
     for i, sermonData in tqdm(d.iterrows(), total=d.shape[0]):
         for i in range(sermonData['passage_count']):
-            sliceStart = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_start_{i}'], sermonData[f'verse_start_{i}'])
-            sliceEnd = (bookToIndex[sermonData[f'book_{i}']], sermonData[f'chapter_end_{i}'], sermonData[f'verse_end_{i}'])
+            sliceStart = (
+                bookToIndex[sermonData[f'book_{i}'].name],
+                sermonData[f'chapter_start_{i}'],
+                max(sermonData[f'verse_start_{i}'], 0),
+            )
+            sliceEnd = (
+                bookToIndex[sermonData[f'book_{i}'].name],
+                sermonData[f'chapter_end_{i}'],
+                max(sermonData[f'verse_end_{i}'], chapVerse[sermonData[f'book_{i}'].name][sermonData[f'chapter_end_{i}']]),
+            )
             visited[sliceStart:sliceEnd] += 1
 
     visited.sum()
@@ -429,5 +452,70 @@ for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'E
     fig = v.plot.line()
     fig.write_html(f'output/{church}.html')
     fig
+
+# %%
+# Create with slider
+visited = pd.DataFrame(0, index=visited.index, columns=range(2007, datetime.now().year+1))
+for year in visited.columns:
+    filtered = data[data['date'] < datetime(year, 1, 1)]
+    for i, sermonData in tqdm(filtered.iterrows(), total=filtered.shape[0], desc=f'{year}'):
+        for i in range(sermonData['passage_count']):
+            sliceStart = (
+                bookToIndex[sermonData[f'book_{i}'].name], 
+                sermonData[f'chapter_start_{i}'], 
+                sermonData[f'verse_start_{i}'],
+            )
+            sliceEnd = (
+                bookToIndex[sermonData[f'book_{i}'].name], 
+                sermonData[f'chapter_end_{i}'], 
+                sermonData[f'verse_end_{i}'],
+            )
+            visited.loc[sliceStart:sliceEnd,year] += 1
+
+v = visited.copy()
+v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
+
+# %%
+# Chat GPT
+import plotly.graph_objects as go
+fig = go.Figure()
+
+for year in v.columns:
+    year_data = v.loc[:,v.columns == year]
+    fig.add_trace(go.Scatter(
+        x=year_data.index,
+        y=year_data.squeeze(),
+        mode='lines',
+        name=str(year),
+        visible=(year==v.columns.max())
+    ))
+
+# Add slider
+steps = []
+for i, year in enumerate(v.columns):
+    step = dict(
+        method="update",
+        args=[{"visible": [False] * len(v.columns)}],
+        label=str(year),
+    )
+    step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+    steps.append(step)
+
+sliders = [dict(
+    active=len(v.columns) - 1,
+    steps=steps,
+    y=0
+)]
+
+fig.update_layout(sliders=sliders, title="Animated Line Plot",
+                  xaxis_title="Index", yaxis_title="Value",
+                  yaxis_range=[0, v.max().max()],
+                  height=550,  # Adjust top and bottom margins
+)
+
+# Show the plot
+fig.show()
+fig.write_html('output/all_animated.html')
+
 
 # %%
