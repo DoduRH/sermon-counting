@@ -30,7 +30,18 @@ class Passage:
         return output
     
     def __hash__(self):
-        return hash(str(self))
+        return 1
+
+    def __eq__(self, other):
+        if isinstance(other, Passage):
+            return (
+                (self.book == other.book) and 
+                (self.chapter_start == other.chapter_start) and 
+                (self.chapter_end == other.chapter_end) and 
+                (self.verse_start == other.verse_start) and 
+                (self.verse_end == other.verse_end))
+        else:
+            return False
 
     def xInY(_, x: Passage, y: Passage):
         if x.verse_start == x.verse_end == -1:
