@@ -3,8 +3,10 @@ from __future__ import annotations
 
 from datetime import datetime
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
 import esv_ranges
+import plotly.graph_objects as go
 
 from importlib import reload
 
@@ -77,9 +79,9 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | (data[f'book_{i}'].isin(Book.EZEKIEL.value))
+    mask = mask | (data[f'book_{i}'] == Book.JEREMIAH)
 
-data[mask & westburyMask].title
+print(data[mask & westburyMask].title)
 
 # %%
 # Find unvisited books
@@ -201,7 +203,6 @@ v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_fl
 
 # %%
 # Chat GPT
-import plotly.graph_objects as go
 fig = go.Figure()
 
 for year in v.columns:
@@ -231,10 +232,19 @@ sliders = [dict(
     y=0
 )]
 
-fig.update_layout(sliders=sliders, title="Animated Line Plot",
-                  xaxis_title="Index", yaxis_title="Value",
-                  yaxis_range=[0, v.max().max()],
-                  height=550,  # Adjust top and bottom margins
+_, tickPositions = np.unique(visited.index.get_level_values(0), return_index=True)
+
+fig.update_layout(
+    sliders=sliders, title="Animated Line Plot",
+    yaxis_title="Number of Visits", 
+    yaxis_range=[0, v.max().max()+1],
+    xaxis=dict(
+        title="",
+        tickmode='array',
+        tickvals=tickPositions,
+        ticktext=[b.getName() for b in Book],
+    ),
+    height=550,  # Adjust top and bottom margins
 )
 
 # Show the plot
