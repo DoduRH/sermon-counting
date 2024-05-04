@@ -85,21 +85,20 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | (data[f'book_{i}'] == Book.JEREMIAH)
+    mask = mask | (data[f'book_{i}'] == Book.JOHN1)
 
-print(data[mask & westburyMask].title)
+print(data[mask].title)
 
 # %%
-# Find unvisited books
 print("Unvisited books")
-d = data[westburyMask & (data.date > datetime(2021,1,1))]
+d = data[westburyMask & (data.date > datetime(2000,1,1))]
 for book in Book:
     # Skip abreviated books
     mask = pd.Series(False, index=d.index)
 
     for i in range(d['passage_count'].max()):
         mask = mask | (d[f'book_{i}'] == book)
-    if mask.sum() != 0:
+    if mask.sum() == 0:
         print(book.value[0].title())
 
 # %%
@@ -159,7 +158,7 @@ for church, d in churches.items():
 
 # %%
 # Create with slider
-def generateGraphData(data, idx):
+def generateLineGraphData(data, idx):
     visited = pd.DataFrame(0, index=idx, columns=range(data.date.min().year, data.date.max().year+1))
     for year in visited.columns:
         filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
@@ -187,7 +186,7 @@ def generateGraphData(data, idx):
 for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     pbar.set_postfix_str(church)
     fig = go.Figure()
-    v = generateGraphData(d, visitedIdx)
+    v = generateLineGraphData(d, visitedIdx)
     for year in v.columns:
         year_data = v.loc[:,v.columns == year]
         fig.add_trace(go.Scatter(
@@ -233,3 +232,35 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
 
 
 # %%
+# Bar chart for percentage book covered
+visited = pd.DataFrame(0, index=visitedIdx, columns=range(data.date.min().year, data.date.max().year+1))
+for year in visited.columns:
+    filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
+    for i, sermonData in filtered.iterrows():
+        for i in range(sermonData['passage_count']):
+            sliceStart = (
+                bookToIndex[sermonData[f'book_{i}'].name], 
+                sermonData[f'chapter_start_{i}'], 
+                sermonData[f'verse_start_{i}'],
+            )
+            sliceEnd = (
+                bookToIndex[sermonData[f'book_{i}'].name], 
+                sermonData[f'chapter_end_{i}'], 
+                sermonData[f'verse_end_{i}'],
+            )
+            visited.loc[sliceStart:sliceEnd,:year] += 1
+
+visited.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in visited.index.to_flat_index()]
+verses = pd.DataFrame(-1, columns=['Total', 'Visited'], index=[b.getName() for b in Book])
+for b in Book:
+    mask = visited.index.str.startswith(b.getName())
+    verses.loc[b.getName(), 'Total'] = mask.sum()
+    verses.loc[b.getName(), 'Visited'] = (visited[mask] > 0).sum()[2007]
+    
+
+v = visited.copy()
+
+# a = generateBarGraphData(westbury, visitedIdx)
+# %%
+perc = verses.Visited / verses.Total
+perc.plot.bar()

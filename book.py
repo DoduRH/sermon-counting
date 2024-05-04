@@ -81,3 +81,6 @@ class Book(Enum):
             return any([other in bookName for bookName in self.value])
         return False
     
+    def __repr__(self) -> str:
+        return self.getName()
+    
