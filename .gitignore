@@ -7,3 +7,4 @@ testing.csv
 **/__pycache__
 /output
 /venv
+/data

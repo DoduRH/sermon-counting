@@ -183,7 +183,7 @@ for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'E
 # Create with slider
 visited = pd.DataFrame(0, index=visited.index, columns=range(2007, datetime.now().year+1))
 for year in visited.columns:
-    filtered = data[data['date'] > datetime(year, 1, 1)]
+    filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
     for i, sermonData in tqdm(filtered.iterrows(), total=filtered.shape[0], desc=f'{year}'):
         for i in range(sermonData['passage_count']):
             sliceStart = (
@@ -196,7 +196,7 @@ for year in visited.columns:
                 sermonData[f'chapter_end_{i}'], 
                 sermonData[f'verse_end_{i}'],
             )
-            visited.loc[sliceStart:sliceEnd,year] += 1
+            visited.loc[sliceStart:sliceEnd,:year] += 1
 
 v = visited.copy()
 v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
@@ -249,7 +249,7 @@ fig.update_layout(
 
 # Show the plot
 fig.show()
-fig.write_html('output/all_animated.html')
+fig.write_html('output/all_animated2.html')
 
 
 # %%
