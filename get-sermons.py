@@ -56,6 +56,12 @@ print(f"ECC: {ecc.shape[0]}")
 unassigned = data[~(westburyMask | bishopstonMask | eccMask)]
 print(f"unassigned: {unassigned.shape[0]}")
 
+churches = {
+    'all': data,
+    'ECC': data[eccMask],
+    'EW' : data[westburyMask], 
+    'EB' : data[bishopstonMask],
+}
 
 # %%
 # Find sermons from multiple churches
@@ -96,35 +102,6 @@ for book in Book:
     if mask.sum() != 0:
         print(book.value[0].title())
 
-
-# %%
-# Create visited dataframe
-
-bible_data = {
-    'Book': [],
-    'Chapter': [],
-    'Verse': [],
-    'Visited': 0,
-}
-
-bookToIndex = {}
-indexToBook = {}
-
-for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_data[1:]):
-    bookToIndex[bookName] = i
-    indexToBook[i] = bookName
-    # Remove None padding
-    verseCounts = verseCounts[1:]
-    for chapterNum, chapterVerseCount in enumerate(verseCounts, start=1):
-        bible_data['Book'].extend([i] * chapterVerseCount)
-        bible_data['Chapter'].extend([chapterNum] * chapterVerseCount)
-        bible_data['Verse'].extend(range(1, chapterVerseCount + 1))
-
-visited = pd.DataFrame(bible_data)
-
-visited.set_index(['Book', 'Chapter', 'Verse'], inplace=True)
-visited = visited.T
-
 # %%
 # Create visited Series
 
@@ -148,10 +125,11 @@ for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_dat
             bible_data[(i, chapterNum, verse)] = 0
 
 visited = pd.Series(bible_data)
+visitedIdx = visited.index
 
 # %%
 # Mark books we have been to
-for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'EW'], [data[bishopstonMask], 'EB']]:
+for church, d in churches.items():
     church = 'all'
     visited = pd.Series(0, index=visited.index)
     for i, sermonData in tqdm(d.iterrows(), total=d.shape[0]):
@@ -181,75 +159,77 @@ for d, church in [[data, 'all'], [data[eccMask], 'ECC'], [data[westburyMask], 'E
 
 # %%
 # Create with slider
-visited = pd.DataFrame(0, index=visited.index, columns=range(2007, datetime.now().year+1))
-for year in visited.columns:
-    filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
-    for i, sermonData in tqdm(filtered.iterrows(), total=filtered.shape[0], desc=f'{year}'):
-        for i in range(sermonData['passage_count']):
-            sliceStart = (
-                bookToIndex[sermonData[f'book_{i}'].name], 
-                sermonData[f'chapter_start_{i}'], 
-                sermonData[f'verse_start_{i}'],
-            )
-            sliceEnd = (
-                bookToIndex[sermonData[f'book_{i}'].name], 
-                sermonData[f'chapter_end_{i}'], 
-                sermonData[f'verse_end_{i}'],
-            )
-            visited.loc[sliceStart:sliceEnd,:year] += 1
+def generateGraphData(data, idx):
+    visited = pd.DataFrame(0, index=idx, columns=range(data.date.min().year, data.date.max().year+1))
+    for year in visited.columns:
+        filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
+        for i, sermonData in filtered.iterrows():
+            for i in range(sermonData['passage_count']):
+                sliceStart = (
+                    bookToIndex[sermonData[f'book_{i}'].name], 
+                    sermonData[f'chapter_start_{i}'], 
+                    sermonData[f'verse_start_{i}'],
+                )
+                sliceEnd = (
+                    bookToIndex[sermonData[f'book_{i}'].name], 
+                    sermonData[f'chapter_end_{i}'], 
+                    sermonData[f'verse_end_{i}'],
+                )
+                visited.loc[sliceStart:sliceEnd,:year] += 1
 
-v = visited.copy()
-v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
+    v = visited.copy()
+    v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
+    return v
+
 
 # %%
-# Chat GPT
-fig = go.Figure()
+# Generate figures
+for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
+    pbar.set_postfix_str(church)
+    fig = go.Figure()
+    v = generateGraphData(d, visitedIdx)
+    for year in v.columns:
+        year_data = v.loc[:,v.columns == year]
+        fig.add_trace(go.Scatter(
+            x=year_data.index,
+            y=year_data.squeeze(),
+            mode='lines',
+            name="",
+            visible=(year==v.columns.max()),
+        ))
 
-for year in v.columns:
-    year_data = v.loc[:,v.columns == year]
-    fig.add_trace(go.Scatter(
-        x=year_data.index,
-        y=year_data.squeeze(),
-        mode='lines',
-        name=str(year),
-        visible=(year==v.columns.max())
-    ))
+    # Add slider
+    steps = []
+    for i, year in enumerate(v.columns):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * v.shape[1]}],
+            label=str(year),
+        )
+        step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
 
-# Add slider
-steps = []
-for i, year in enumerate(v.columns):
-    step = dict(
-        method="update",
-        args=[{"visible": [False] * len(v.columns)}],
-        label=str(year),
+    sliders = [dict(
+        active=len(v.columns) - 1,
+        steps=steps,
+        y=0
+    )]
+
+    fig.update_layout(
+        sliders=sliders, title="",
+        yaxis_title="Number of Visits", 
+        yaxis_range=[0, v.max().max()+1],
+        xaxis=dict(
+            title="",
+            nticks=10
+            # tickmode='array',
+            # tickvals=tickPositions,
+            # ticktext=[b.getName() for b in Book],
+        ),
     )
-    step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
-    steps.append(step)
 
-sliders = [dict(
-    active=len(v.columns) - 1,
-    steps=steps,
-    y=0
-)]
-
-_, tickPositions = np.unique(visited.index.get_level_values(0), return_index=True)
-
-fig.update_layout(
-    sliders=sliders, title="",
-    yaxis_title="Number of Visits", 
-    yaxis_range=[0, v.max().max()+1],
-    xaxis=dict(
-        title="",
-        nticks=10
-        # tickmode='array',
-        # tickvals=tickPositions,
-        # ticktext=[b.getName() for b in Book],
-    ),
-)
-
-# Show the plot
-fig.show()
-fig.write_html('output/all_animated2.html')
+    # Show the plot
+    fig.write_html(f'output/animated_{church}.html')
 
 
 # %%
