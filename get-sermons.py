@@ -126,35 +126,6 @@ for i, (bookName, chapterCount, verseCounts) in enumerate(esv_ranges.passage_dat
 visited = pd.Series(bible_data)
 visitedIdx = visited.index
 
-# %%
-# Mark books we have been to
-for church, d in churches.items():
-    church = 'all'
-    visited = pd.Series(0, index=visited.index)
-    for i, sermonData in tqdm(d.iterrows(), total=d.shape[0]):
-        for i in range(sermonData['passage_count']):
-            sliceStart = (
-                bookToIndex[sermonData[f'book_{i}'].name],
-                sermonData[f'chapter_start_{i}'],
-                max(sermonData[f'verse_start_{i}'], 0),
-            )
-            sliceEnd = (
-                bookToIndex[sermonData[f'book_{i}'].name],
-                sermonData[f'chapter_end_{i}'],
-                max(sermonData[f'verse_end_{i}'], chapVerse[sermonData[f'book_{i}'].name][sermonData[f'chapter_end_{i}']]),
-            )
-            visited[sliceStart:sliceEnd] += 1
-
-    visited.sum()
-
-    v = visited.T.copy()
-    v.index = [f'{indexToBook[x[0]]} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
-    v
-
-    pd.set_option('plotting.backend', 'plotly')
-    fig = v.plot.line()
-    fig.write_html(f'output/{church}.html')
-    fig
 
 # %%
 # Create with slider
