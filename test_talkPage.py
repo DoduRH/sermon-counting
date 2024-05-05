@@ -42,6 +42,11 @@ class TestTrickyPassageCollection(unittest.TestCase):
             Passage(Book.ROMANS, 16, 1, 16, 16),
         }
         self.assertSetEqual(res.passages, expected)
+
+    def test_hebrews8_1_13(self):
+        res = processTalkPage('https://emmanuelbristol.org.uk/sermons/interview-mike-cain/')
+        expected = set()
+        self.assertSetEqual(res.passages, expected)
         
 
 class TestStandardPassageCollection(unittest.TestCase):

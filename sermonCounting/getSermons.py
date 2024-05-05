@@ -25,7 +25,7 @@ CACHE.mkdir(exist_ok=True, parents=True)
 last_request = datetime.now()
 
 def getPage(page: str):
-    page_cache = CACHE.joinpath(request.url2pathname(page.replace('https://', ""))).with_suffix(".html")
+    page_cache = CACHE.joinpath(request.url2pathname(page.replace('https://', "").replace("?", "QUESTION_MARK"))).with_suffix(".html")
     if page_cache.exists():
         with open(page_cache, encoding="utf-8") as f:
             return f.read()
@@ -48,13 +48,14 @@ def getPageByIndex(idx: int):
 
 def processTalkPage(pageUrl: str) -> Sermon:
     output = Sermon()
-    pageData = getPage(pageUrl)
+    pageData = getPage(pageUrl.removesuffix("/") + "?player=audio")
     soup = BeautifulSoup(pageData, 'html.parser')
 
     output.page = pageUrl
     output.title = soup.select_one('.exodus-main-title').text.strip().replace("–", "-")
     speakerElement = soup.select_one('.exodus-sermon-speaker')
     if speakerElement is not None:
+        # TODO: There might be 2 speakers
         output.speaker = speakerElement.text.strip()
     else:
         output.speaker = ""

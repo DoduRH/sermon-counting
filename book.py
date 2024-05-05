@@ -63,9 +63,9 @@ class Book(Enum):
     JAMES = ["James"]
     PETER1 = ["1 Peter"]
     PETER2 = ["2 Peter"]
-    JOHN1 = ["1 John"]
-    JOHN2 = ["2 John"]
-    JOHN3 = ["3 John"]
+    JOHN1 = ["1 John", "I John"]
+    JOHN2 = ["2 John", "II John"]
+    JOHN3 = ["3 John", "III John"]
     JUDE = ["Jude"]
     REVELATION = ["Revelation"]
     

@@ -10,9 +10,9 @@ import plotly.graph_objects as go
 
 from importlib import reload
 
-reload(esv_ranges)
+# reload(esv_ranges)
 import book as BookEnum
-reload(BookEnum)
+# reload(BookEnum)
 from book import Book
 
 from sermonCounting.sermon import Sermon
@@ -85,13 +85,13 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | (data[f'book_{i}'] == Book.JOHN1)
+    mask = mask | (data[f'book_{i}'] == Book.HABAKKUK)
 
 print(data[mask].title)
 
 # %%
 print("Unvisited books")
-d = data[westburyMask & (data.date > datetime(2000,1,1))]
+d = data[westburyMask & (data.date > datetime(2020,1,1))]
 for book in Book:
     # Skip abreviated books
     mask = pd.Series(False, index=d.index)
@@ -158,7 +158,7 @@ for church, d in churches.items():
 
 # %%
 # Create with slider
-def generateLineGraphData(data, idx):
+def generateGraphData(data, idx):
     visited = pd.DataFrame(0, index=idx, columns=range(data.date.min().year, data.date.max().year+1))
     for year in visited.columns:
         filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
@@ -185,8 +185,9 @@ def generateLineGraphData(data, idx):
 # Generate figures
 for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     pbar.set_postfix_str(church)
+    # Generate 
     fig = go.Figure()
-    v = generateLineGraphData(d, visitedIdx)
+    v = generateGraphData(d, visitedIdx)
     for year in v.columns:
         year_data = v.loc[:,v.columns == year]
         fig.add_trace(go.Scatter(
@@ -227,40 +228,54 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         ),
     )
 
+    fig.write_html(f'output/animated_line_{church}.html')
+
+    # Generate bar graphs
+    total = pd.Series(-1, index=[b.getName() for b in Book])
+    count = pd.DataFrame(-1, columns=v.columns, index=[b.getName() for b in Book])
+
+    for b in Book:
+        mask = v.index.str.startswith(b.getName())
+        total.loc[b.getName()] = mask.sum()
+        count.loc[b.getName()] = (v[mask] > 0).sum()
+
+    perc = (count.T / total).T
+
+    fig = go.Figure()
+    for year in perc.columns:
+        year_data = perc.loc[:,perc.columns == year]
+        fig.add_trace(go.Bar(
+            x=year_data.index,
+            y=year_data.squeeze(),
+            name="",
+            visible=(year==perc.columns.max()),
+        ))
+
+    # Add slider
+    steps = []
+    for i, year in enumerate(perc.columns):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * perc.shape[1]}],
+            label=str(year),
+        )
+        step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+
+    sliders = [dict(
+        active=len(perc.columns) - 1,
+        steps=steps,
+        y=0
+    )]
+
+    fig.update_layout(
+        sliders=sliders, title="",
+        yaxis_title="Percentage of book Covered", 
+        yaxis_range=[0, 1],
+        xaxis=dict(
+            title="",
+        ),
+    )
+
     # Show the plot
-    fig.write_html(f'output/animated_{church}.html')
-
-
-# %%
-# Bar chart for percentage book covered
-visited = pd.DataFrame(0, index=visitedIdx, columns=range(data.date.min().year, data.date.max().year+1))
-for year in visited.columns:
-    filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
-    for i, sermonData in filtered.iterrows():
-        for i in range(sermonData['passage_count']):
-            sliceStart = (
-                bookToIndex[sermonData[f'book_{i}'].name], 
-                sermonData[f'chapter_start_{i}'], 
-                sermonData[f'verse_start_{i}'],
-            )
-            sliceEnd = (
-                bookToIndex[sermonData[f'book_{i}'].name], 
-                sermonData[f'chapter_end_{i}'], 
-                sermonData[f'verse_end_{i}'],
-            )
-            visited.loc[sliceStart:sliceEnd,:year] += 1
-
-visited.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in visited.index.to_flat_index()]
-verses = pd.DataFrame(-1, columns=['Total', 'Visited'], index=[b.getName() for b in Book])
-for b in Book:
-    mask = visited.index.str.startswith(b.getName())
-    verses.loc[b.getName(), 'Total'] = mask.sum()
-    verses.loc[b.getName(), 'Visited'] = (visited[mask] > 0).sum()[2007]
-    
-
-v = visited.copy()
-
-# a = generateBarGraphData(westbury, visitedIdx)
-# %%
-perc = verses.Visited / verses.Total
-perc.plot.bar()
+    fig.write_html(f'output/animated_bar_{church}.html')
