@@ -168,6 +168,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
             mode='lines',
             name="",
             visible=(year==v.columns.max()),
+            fill='tozeroy',
         ))
 
     # Add slider
