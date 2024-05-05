@@ -159,6 +159,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     # Generate 
     fig = go.Figure()
     v = generateGraphData(d, visitedIdx)
+    endYear = v.columns[-1]
     for year in v.columns:
         year_data = v.loc[:,v.columns == year]
         fig.add_trace(go.Scatter(
@@ -175,7 +176,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * v.shape[1]}],
-            label=str(year),
+            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
         )
         step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
         steps.append(step)
@@ -210,7 +211,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         total.loc[b.getName()] = mask.sum()
         count.loc[b.getName()] = (v[mask] > 0).sum()
 
-    perc = (count.T / total).T
+    perc = ((count.T / total).T * 100).round(2)
 
     fig = go.Figure()
     for year in perc.columns:
@@ -220,6 +221,8 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
             y=year_data.squeeze(),
             name="",
             visible=(year==perc.columns.max()),
+            text=[f'{x[0]}/{y} verses' for x, y in zip(count.loc[:,perc.columns == year].values, total.values)],
+            textposition="none",
         ))
 
     # Add slider
@@ -228,7 +231,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * perc.shape[1]}],
-            label=str(year),
+            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
         )
         step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
         steps.append(step)
@@ -240,9 +243,9 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     )]
 
     fig.update_layout(
-        sliders=sliders, title="",
+        sliders=sliders, title="Percentage of verses covered for each book",
         yaxis_title="Percentage of book Covered", 
-        yaxis_range=[0, 1],
+        yaxis_range=[0, 100],
         xaxis=dict(
             title="",
         ),
