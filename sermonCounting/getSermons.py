@@ -77,7 +77,15 @@ def processTalkPage(pageUrl: str) -> Sermon:
     allText = output.title.title()
     if len(descriptionSelector) >= 1:
         output.description = descriptionSelector[0].text.replace("–", "-")
-        allText += " " + output.description.title().split("Footnotes")[0]
+        allText += " "
+        
+        # Remove footnotes
+        santisisedDescription = output.description.title().split("Footnotes")[0]
+        for line in reversed(santisisedDescription.split("\n")):
+            if line.startswith("["):
+                continue
+            allText += line + "\n"
+            
     for bibleBookGroup in reversed(Book):
         for bibleBook in bibleBookGroup.value:
             split = allText.split(bibleBook)

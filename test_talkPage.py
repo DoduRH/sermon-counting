@@ -48,12 +48,17 @@ class TestTrickyPassageCollection(unittest.TestCase):
         expected = set()
         self.assertSetEqual(res.passages, expected)
         
+    
+    def test_worthy_equal_and_difference_footnotes(self):
+        res = processTalkPage('https://emmanuelbristol.org.uk/sermons/worthy-equal-and-different-matthew-15-1-9/')
+        expected = {Passage(Book.MATTHEW, 15, 1, 15, 9)}
+        self.assertSetEqual(res.passages, expected)
 
 class TestStandardPassageCollection(unittest.TestCase):
     def template(self):
         res = processTalkPage('')
         expected = {Passage(Book.GENESIS, 11, 11, 11, 11)}
-        self.assertSetEqual(res.passages, expected)
+        self.assertSetEqual(res.passages, expected)    
     
     def test_god_is_mighty_to_save(self):
         res = processTalkPage('https://emmanuelbristol.org.uk/sermons/god-is-mighty-to-save-praise-him/')
