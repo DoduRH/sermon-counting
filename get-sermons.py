@@ -85,7 +85,8 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | (data[f'book_{i}'] == Book.HABAKKUK)
+    mask = mask | ((data[f'book_{i}'] == Book.ROMANS)
+                   & (data[f'chapter_start_{i}'] == 14))
 
 print(data[mask].title)
 
@@ -129,8 +130,12 @@ visitedIdx = visited.index
 
 # %%
 # Create with slider
-def generateGraphData(data, idx):
-    visited = pd.DataFrame(0, index=idx, columns=range(data.date.min().year, data.date.max().year+1))
+def generateGraphData(data, idx, startYear=None, endYear=None):
+    if startYear is None:
+        startYear = data.date.min().year
+    if endYear is None:
+        endYear = data.date.max().year
+    visited = pd.DataFrame(0, index=idx, columns=range(startYear, endYear+1))
     for year in visited.columns:
         filtered = data[(datetime(year, 1, 1) < data['date']) & (data['date'] < datetime(year+1, 1, 1))]
         for i, sermonData in filtered.iterrows():
@@ -155,6 +160,8 @@ def generateGraphData(data, idx):
 # %%
 # Generate figures
 for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
+    if False and church != "EW":
+        continue
     pbar.set_postfix_str(church)
     # Generate 
     fig = go.Figure()
@@ -254,3 +261,71 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
 
     # Show the plot
     fig.write_html(f'output/animated_bar_{church}.html')
+
+    # Generate stacked bar graphs
+    total = pd.Series(-1, index=[b.getName() for b in Book])
+    count = pd.DataFrame(-1, columns=v.columns, index=[b.getName() for b in Book])
+
+    for b in Book:
+        mask = v.index.str.startswith(b.getName())
+        total.loc[b.getName()] = mask.sum()
+        count.loc[b.getName()] = (v[mask] > 0).sum()
+
+    bottom = count
+    top = (total - count.T).T
+
+    fig = go.Figure()
+    for year in bottom.columns:
+        bottom_year_data = bottom.loc[:,bottom.columns == year]
+        top_year_data = top.loc[:,top.columns == year]
+        fig.add_trace(go.Bar(
+            x=bottom_year_data.index,
+            y=bottom_year_data.squeeze(),
+            name="Visited",
+            visible=(year==bottom.columns.max()),
+            offsetgroup=0,
+        ))
+        fig.add_trace(go.Bar(
+            x=top_year_data.index,
+            y=top_year_data.squeeze(),
+            name="Unread",
+            visible=(year==top.columns.max()),
+            base=bottom_year_data.squeeze(),
+            offsetgroup=0,
+        ))
+
+    # Add slider
+    steps = []
+    for i, year in enumerate(bottom.columns):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * bottom.shape[1]*2}],
+            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+        )
+        step["args"][0]["visible"][i*2] = True  # Toggle i'th trace to "visible"
+        step["args"][0]["visible"][i*2+1] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+
+    sliders = [dict(
+        active=len(perc.columns) - 1,
+        steps=steps,
+        y=0
+    )]
+
+    fig.update_layout(
+        sliders=sliders, title="Split between number of verses covered for each book",
+        yaxis_title="Number of verses", 
+        xaxis=dict(
+            title="",
+        ),
+    )
+
+    # Show the plot
+    fig.write_html(f'output/animated_stacked_bar_{church}.html')
+
+# %%
+# Find missing Romans verse
+if 'yearData' not in locals():
+    yearData = generateGraphData(churches['all'], visitedIdx)[2007]
+romans = yearData[yearData.index.str.startswith("Romans")]
+romans[romans == 0]
