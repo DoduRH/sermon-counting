@@ -149,3 +149,8 @@ def processMainPageByIdx(idx: int) -> 'set[Sermon]':
         output.add(processTalkPage(article.find('a').attrs['href']))
 
     return output
+
+def getPageCount():
+    page = getPageByIndex(1)
+    soup = BeautifulSoup(page, 'html.parser')
+    return int(soup.find("ul", {"class": "page-numbers"}).select("li")[-2].text)

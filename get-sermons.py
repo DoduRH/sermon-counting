@@ -8,19 +8,15 @@ from tqdm import tqdm
 import esv_ranges
 import plotly.graph_objects as go
 
-from importlib import reload
-
-# reload(esv_ranges)
-import book as BookEnum
-# reload(BookEnum)
 from book import Book
 
 from sermonCounting.sermon import Sermon
-from sermonCounting.getSermons import processMainPageByIdx
+from sermonCounting.getSermons import processMainPageByIdx, getPageCount
 
 # %%
 start = 1
-end = 141
+end = getPageCount()
+
 with tqdm(total=(end - start + 1) * 10) as pbar:
     sermons: 'set[Sermon]' = set()
     for num in range(start, end+1): # 141 pages to do
