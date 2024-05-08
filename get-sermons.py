@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import datetime
 import pandas as pd
-import numpy as np
 from tqdm import tqdm
 import esv_ranges
 import plotly.graph_objects as go
@@ -22,14 +21,6 @@ with tqdm(total=(end - start + 1) * 10) as pbar:
     for num in range(start, end+1): # 141 pages to do
         sermons.update(processMainPageByIdx(num))
         pbar.update(10)
-
-tags = set()
-missingTagCount = 0
-for sermon in sermons:
-    if len(sermon.tags) == 0:
-        missingTagCount += 1
-    else:
-        tags.update(sermon.tags)
 
 data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
 data
