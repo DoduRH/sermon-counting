@@ -73,10 +73,12 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | ((data[f'book_{i}'] == Book.ROMANS)
-                   & (data[f'chapter_start_{i}'] == 14))
+    mask = mask | ((data[f'book_{i}'] == Book.PETER1))
+                #    & (data[f'chapter_start_{i}'] == 14))
 
-print(data[mask].title)
+mask = mask & (data.date >= datetime(2024, 1, 1))
+
+data[mask].title
 
 # %%
 print("Unvisited books")
@@ -148,7 +150,7 @@ def generateGraphData(data, idx, startYear=None, endYear=None):
 # %%
 # Generate figures
 for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
-    if False and church != "EW":
+    if True and church != "EW":
         continue
     pbar.set_postfix_str(church)
     # Generate 
@@ -316,8 +318,10 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     for year in v.columns:
         filtered = d[(datetime(year, 1, 1) < d['date']) & (d['date'] < datetime(year+1, 1, 1))]
         for _, sermon in filtered.iterrows():
+            sermonBooks = []
             for i in range(sermon.passage_count):
-                sermonCount.loc[sermon[f'book_{i}'].getName(),:year] += 1
+                sermonBooks.append(sermon[f'book_{i}'].getName())
+            sermonCount.loc[sermonBooks,:year] += 1
 
     fig = go.Figure()
     for year in sermonCount.columns:

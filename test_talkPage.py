@@ -54,6 +54,15 @@ class TestTrickyPassageCollection(unittest.TestCase):
         expected = {Passage(Book.MATTHEW, 15, 1, 15, 9)}
         self.assertSetEqual(res.passages, expected)
 
+    def test_1peter_bad_title(self):
+        res = processTalkPage('https://emmanuelbristol.org.uk/sermons/1-peter-11-2-512-14/')
+        expected = {
+            Passage(Book.PETER1, 1, 1, 1, 2),
+            Passage(Book.PETER1, 5, 12, 5, 14)
+        }
+        self.assertSetEqual(res.passages, expected)   
+
+
 class TestStandardPassageCollection(unittest.TestCase):
     def template(self):
         res = processTalkPage('')
