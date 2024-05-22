@@ -4,3 +4,5 @@ unidecode
 bs4
 plotly
 tqdm
+matplotlib
+nbformat
