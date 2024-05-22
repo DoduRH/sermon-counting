@@ -1,6 +1,7 @@
 # %%
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime
 import pandas as pd
 from tqdm import tqdm
@@ -309,6 +310,53 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
 
     # Show the plot
     fig.write_html(f'output/animated_stacked_bar_{church}.html')
+
+    # Create raw count graphs
+    sermonCount = pd.DataFrame(0, columns=v.columns, index=[b.getName() for b in Book])
+    for year in v.columns:
+        filtered = d[(datetime(year, 1, 1) < d['date']) & (d['date'] < datetime(year+1, 1, 1))]
+        for _, sermon in filtered.iterrows():
+            for i in range(sermon.passage_count):
+                sermonCount.loc[sermon[f'book_{i}'].getName(),:year] += 1
+
+    fig = go.Figure()
+    for year in sermonCount.columns:
+        year_data = sermonCount.loc[:,sermonCount.columns == year]
+        fig.add_trace(go.Bar(
+            x=year_data.index,
+            y=year_data.squeeze(),
+            name="",
+            visible=(year==sermonCount.columns.max()),
+        ))
+
+    # Add slider
+    steps = []
+    for i, year in enumerate(sermonCount.columns):
+        step = dict(
+            method="update",
+            args=[{"visible": [False] * sermonCount.shape[1]}],
+            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+        )
+        step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+        steps.append(step)
+
+    sliders = [dict(
+        active=len(sermonCount.columns) - 1,
+        steps=steps,
+        y=0
+    )]
+
+    fig.update_layout(
+        sliders=sliders, title="Number of sermons in each book",
+        yaxis_title="Number of Sermons", 
+        yaxis_range=[0, round(sermonCount.max().max()+5, -1)],
+        xaxis=dict(
+            title="",
+        ),
+    )
+
+    # Show the plot
+    fig.write_html(f'output/animated_count_{church}.html')
 
 # %%
 # Find missing Romans verse
