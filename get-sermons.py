@@ -73,12 +73,14 @@ data['passage_count'].plot.hist(bins=data['passage_count'].max()+1)
 mask = pd.Series(False, index=data.index)
 
 for i in range(data['passage_count'].max()):
-    mask = mask | ((data[f'book_{i}'] == Book.PETER1))
+    mask = mask | ((data[f'book_{i}'] == Book.MATTHEW))
                 #    & (data[f'chapter_start_{i}'] == 14))
 
-mask = mask & (data.date >= datetime(2024, 1, 1))
+mask = mask & (data.date >= datetime(2009, 1, 1))
+mask = mask & (data.date < datetime(2010, 1, 1))
+mask = mask & westburyMask
 
-data[mask].title
+data[mask].sort_values(by='date')[['title', 'date']]
 
 # %%
 print("Unvisited books")
