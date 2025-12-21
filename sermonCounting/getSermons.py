@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep
 from urllib import request
+import requests
 
 import numpy as np
 from bs4 import BeautifulSoup
@@ -31,14 +32,16 @@ def getPage(page: str):
             return f.read()
     page_cache.parent.mkdir(exist_ok=True, parents=True)
     # Rate limiting
-    while last_request + timedelta(seconds=1) > datetime.now():
+    while last_request + timedelta(seconds=2) > datetime.now():
         sleep(1)
 
-    response = request.urlopen(page)
-    if response.code != 200:
+    response = requests.get(page, headers={
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0',
+    })
+    if response.status_code != 200:
         print(f"Error found when loading {page}")
         raise FileNotFoundError()
-    string: str = response.read().decode()
+    string: str = response.text
     with open(page_cache, "w+", encoding="utf-8") as f:
         f.write(string)
     return string

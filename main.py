@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 import esv_ranges
@@ -24,7 +25,7 @@ with tqdm(total=(end - start + 1) * 10) as pbar:
         pbar.update(10)
 
 data = pd.DataFrame.from_records([s.to_dict() for s in sermons])
-data
+
 
 # %%
 # Sermon Counts
@@ -148,12 +149,13 @@ def generateGraphData(data, idx, startYear=None, endYear=None):
     v.index = [f'{indexToBook[x[0]].getName()} {x[1]}:{x[2]}' for x in v.index.to_flat_index()]
     return v
 
+# %%
+# Create directory
+Path("output").mkdir(exist_ok=True, parents=True)
 
 # %%
 # Generate figures
 for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
-    if True and church != "EW":
-        continue
     pbar.set_postfix_str(church)
     # Generate 
     fig = go.Figure()
