@@ -46,7 +46,7 @@ unassigned = data[~(westburyMask | bishopstonMask | eccMask)]
 print(f"unassigned: {unassigned.shape[0]}")
 
 churches = {
-    'all': data,
+    'combined': data,
     'ECC': data[eccMask],
     'EW' : data[westburyMask], 
     'EB' : data[bishopstonMask],
@@ -98,8 +98,7 @@ for book in Book:
 # %%
 # Create visited Series
 
-bible_data = {
-}
+bible_data = {}
 
 bookToIndex = {}
 indexToBook = {}
@@ -151,7 +150,14 @@ def generateGraphData(data, idx, startYear=None, endYear=None):
 
 # %%
 # Create directory
-Path("output").mkdir(exist_ok=True, parents=True)
+BASE_DIR = Path("output")
+BASE_DIR.mkdir(exist_ok=True, parents=True)
+
+def generateFilename(church: str, type: str, base: Path = BASE_DIR):
+    output = base.joinpath(church, type).with_suffix(".html")
+    output.parent.mkdir(exist_ok=True, parents=True)
+    return output
+
 
 # %%
 # Generate figures
@@ -202,7 +208,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         ),
     )
 
-    fig.write_html(f'output/animated_line_{church}.html')
+    fig.write_html(generateFilename(church, "line"))
 
     # Generate bar graphs
     total = pd.Series(-1, index=[b.getName() for b in Book])
@@ -254,7 +260,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     )
 
     # Show the plot
-    fig.write_html(f'output/animated_bar_{church}.html')
+    fig.write_html(generateFilename(church, "bar"))
 
     # Generate stacked bar graphs
     total = pd.Series(-1, index=[b.getName() for b in Book])
@@ -315,7 +321,7 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     )
 
     # Show the plot
-    fig.write_html(f'output/animated_stacked_bar_{church}.html')
+    fig.write_html(generateFilename(church, "stacked_bar"))
 
     # Create raw count graphs
     sermonCount = pd.DataFrame(0, columns=v.columns, index=[b.getName() for b in Book])
@@ -364,11 +370,11 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
     )
 
     # Show the plot
-    fig.write_html(f'output/animated_count_{church}.html')
+    fig.write_html(generateFilename(church, "count"))
 
 # %%
 # Find missing Romans verse
 if 'yearData' not in locals():
-    yearData = generateGraphData(churches['all'], visitedIdx)[2007]
+    yearData = generateGraphData(churches['combined'], visitedIdx)[2007]
 romans = yearData[yearData.index.str.startswith("Romans")]
 romans[romans == 0]
