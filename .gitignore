@@ -1,0 +1,10 @@
+/cache*
+/.vscode
+sermons.csv
+noBook.csv
+testing.csv
+*.feather
+**/__pycache__
+/output
+/venv
+/data
