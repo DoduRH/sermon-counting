@@ -184,15 +184,17 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * v.shape[1]}],
-            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+            label=year,
         )
         step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
         steps.append(step)
 
     sliders = [dict(
+        currentvalue=dict(visible=False),
         active=len(v.columns) - 1,
         steps=steps,
-        y=0
+        y=1.1,
+        yanchor='bottom'
     )]
 
     fig.update_layout(
@@ -206,7 +208,9 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
             # tickvals=tickPositions,
             # ticktext=[b.getName() for b in Book],
         ),
+        margin=dict(t=140),
     )
+    fig.update_xaxes(tickangle=45, automargin=True)
 
     fig.write_html(generateFilename(church, "line"))
 
@@ -239,15 +243,17 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * perc.shape[1]}],
-            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+            label=year,
         )
         step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
         steps.append(step)
 
     sliders = [dict(
+        currentvalue=dict(visible=False),
         active=len(perc.columns) - 1,
         steps=steps,
-        y=0
+        y=1.1,
+        yanchor='bottom'
     )]
 
     fig.update_layout(
@@ -257,7 +263,9 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         xaxis=dict(
             title="",
         ),
+        margin=dict(t=140),
     )
+    fig.update_xaxes(tickangle=45, automargin=True)
 
     # Show the plot
     fig.write_html(generateFilename(church, "bar"))
@@ -300,16 +308,18 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * bottom.shape[1]*2}],
-            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+            label=year,
         )
         step["args"][0]["visible"][i*2] = True  # Toggle i'th trace to "visible"
         step["args"][0]["visible"][i*2+1] = True  # Toggle i'th trace to "visible"
         steps.append(step)
 
     sliders = [dict(
+        currentvalue=dict(visible=False),
         active=len(perc.columns) - 1,
         steps=steps,
-        y=0
+        y=1.1,
+        yanchor='bottom'
     )]
 
     fig.update_layout(
@@ -318,7 +328,9 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         xaxis=dict(
             title="",
         ),
+        margin=dict(t=140),
     )
+    fig.update_xaxes(tickangle=45, automargin=True)
 
     # Show the plot
     fig.write_html(generateFilename(church, "stacked_bar"))
@@ -349,15 +361,17 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         step = dict(
             method="update",
             args=[{"visible": [False] * sermonCount.shape[1]}],
-            label=f'{year}{f'-{endYear}' if year != endYear else ''}',
+            label=year,
         )
         step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
         steps.append(step)
 
     sliders = [dict(
+        currentvalue=dict(visible=False),
         active=len(sermonCount.columns) - 1,
         steps=steps,
-        y=0
+        y=1.1,
+        yanchor='bottom'
     )]
 
     fig.update_layout(
@@ -367,7 +381,9 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
         xaxis=dict(
             title="",
         ),
+        margin=dict(t=140),
     )
+    fig.update_xaxes(tickangle=45, automargin=True)
 
     # Show the plot
     fig.write_html(generateFilename(church, "count"))
