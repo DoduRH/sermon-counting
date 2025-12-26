@@ -20,11 +20,7 @@ if [ ! -d "output" ]; then
     exit 1
 fi
 
-# Check if index.html exists
-if [ ! -f "output/index.html" ]; then
-    echo -e "${YELLOW}⚠️  Error: 'output/index.html' not found${NC}"
-    exit 1
-fi
+cp html/index.html output/index.html
 
 # Check if gh-pages is installed
 if ! npm list --depth=0 | grep -q gh-pages; then
