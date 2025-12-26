@@ -1,432 +1,449 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sermon Counting - Visualizations</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sermon Counting - Visualizations</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }   
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
 
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-            animation: fadeInDown 0.6s ease-out;
-        }
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+      animation: fadeInDown 0.6s ease-out;
+    }
 
-        header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        header p {
-            font-size: 1.1rem;
-            opacity: 0.95;
-        }
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
 
-        .controls {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            animation: fadeInUp 0.6s ease-out;
-        }
+    .controls {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 0.6s ease-out;
+    }
 
-        .control-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 15px;
-        }
+    .control-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
 
-        @media (max-width: 768px) {
-            .control-group {
-                grid-template-columns: 1fr;
-            }
-        }
+    @media (max-width: 768px) {
+      .control-group {
+        grid-template-columns: 1fr;
+      }
+    }
 
-        .control-item {
-            display: flex;
-            flex-direction: column;
-        }
+    .control-item {
+      display: flex;
+      flex-direction: column;
+    }
 
-        /* Radio-style button group */
-        .radio-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+    /* Radio-style button group */
+    .radio-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
-        .radio-group input[type="radio"] {
-            display: none;
-        }
+    .radio-group input[type="radio"] {
+      display: none;
+    }
 
-        .radio-btn {
-            padding: 10px 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: white;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.15s ease;
-            font-size: 0.95rem;
-            color: #333;
-        }
+    .radio-btn {
+      padding: 10px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      font-size: 0.95rem;
+      color: #333;
+    }
 
-        .radio-btn:hover {
-            border-color: #667eea;
-            color: #667eea;
-        }
+    .radio-btn:hover {
+      border-color: #667eea;
+      color: #667eea;
+    }
 
-        .radio-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
+    .radio-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
 
-        label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #333;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    label {
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-        select {
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1rem;
-            background-color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
+    select {
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      background-color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
 
-        select:hover {
-            border-color: #667eea;
-        }
+    select:hover {
+      border-color: #667eea;
+    }
 
-        select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
 
-        /* Quick-select buttons removed */
+    /* Quick-select buttons removed */
 
-        .graph-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            animation: fadeIn 0.6s ease-out;
-            min-height: 600px;
-        }
+    .graph-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: fadeIn 0.6s ease-out;
+      min-height: 600px;
+    }
 
-        .graph-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 600px;
-            color: #999;
-            font-size: 1.1rem;
-        }
+    .graph-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 600px;
+      color: #999;
+      font-size: 1.1rem;
+    }
 
-        .graph-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            min-height: 600px;
-        }
+    .graph-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      min-height: 600px;
+    }
 
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 40px;
-        }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 40px;
+    }
 
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
 
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 40px;
-            opacity: 0.8;
-            font-size: 0.9rem;
-        }
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
 
-        .info-badge {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            margin-left: 10px;
-            font-size: 0.85rem;
-        }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        /* Explanation card */
-        .explain-card {
-            background: rgba(255,255,255,0.95);
-            border-radius: 10px;
-            padding: 18px;
-            margin-bottom: 18px;
-            color: #222;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-            font-size: 0.95rem;
-        }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
 
-        .explain-card h3 {
-            margin-bottom: 8px;
-            font-size: 1.05rem;
-            color: #333;
-        }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-        .explain-list {
-            display: grid;
-            gap: 8px;
-        }
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 40px;
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
 
-        .explain-item {
-            display: block;
-        }
-    </style>
+    .info-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      margin-left: 10px;
+      font-size: 0.85rem;
+    }
+
+    /* Explanation card */
+    .explain-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 18px;
+      color: #222;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+      font-size: 0.95rem;
+    }
+
+    .explain-card h3 {
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+      color: #333;
+    }
+
+    .explain-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .explain-item {
+      display: block;
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1>📊 Sermon Counting</h1>
-            <p>Interactive Visualization Dashboard</p>
-        </header>
+  <div class="container">
+    <header>
+      <h1>Emmanuel Bristol Sermon Distribution</h1>
+      <p>Interactive Visualization Dashboard</p>
+    </header>
 
-        <div class="controls">
-            <div class="control-group">
-                <div class="control-item">
-                    <label>Church</label>
-                    <div class="radio-group" role="radiogroup" aria-label="Church selection">
-                        <input type="radio" name="category" id="cat-combined" value="combined" checked>
-                        <label class="radio-btn active" for="cat-combined">All Churches</label>
+    <div class="controls">
+      <div class="control-group">
+        <div class="control-item">
+          <label>Church</label>
+          <div class="radio-group" role="radiogroup" aria-label="Church selection">
+            <input type="radio" name="category" id="cat-combined" value="combined" checked>
+            <label class="radio-btn active" for="cat-combined">All Churches</label>
 
-                        <input type="radio" name="category" id="cat-EB" value="EB">
-                        <label class="radio-btn" for="cat-EB">Bishopston</label>
+            <input type="radio" name="category" id="cat-EB" value="EB">
+            <label class="radio-btn" for="cat-EB">Bishopston</label>
 
-                        <input type="radio" name="category" id="cat-ECC" value="ECC">
-                        <label class="radio-btn" for="cat-ECC">City Center</label>
+            <input type="radio" name="category" id="cat-ECC" value="ECC">
+            <label class="radio-btn" for="cat-ECC">City Center</label>
 
-                        <input type="radio" name="category" id="cat-EW" value="EW">
-                        <label class="radio-btn" for="cat-EW">Westbury</label>
-                    </div>
-                </div>
-                <div class="control-item">
-                    <label>Graph Type</label>
-                    <div class="radio-group" role="radiogroup" aria-label="Graph type selection">
-                        <input type="radio" name="graph" id="graph-bar" value="bar" checked>
-                        <label class="radio-btn graph-btn active" for="graph-bar">Bar Chart</label>
-
-                        <input type="radio" name="graph" id="graph-count" value="count">
-                        <label class="radio-btn graph-btn" for="graph-count">Count</label>
-
-                        <input type="radio" name="graph" id="graph-line" value="line">
-                        <label class="radio-btn graph-btn" for="graph-line">Line Chart</label>
-
-                        <input type="radio" name="graph" id="graph-stacked_bar" value="stacked_bar">
-                        <label class="radio-btn graph-btn" for="graph-stacked_bar">Stacked Bar Chart</label>
-                    </div>
-                </div>
-            </div>
+            <input type="radio" name="category" id="cat-EW" value="EW">
+            <label class="radio-btn" for="cat-EW">Westbury</label>
+          </div>
         </div>
+        <div class="control-item">
+          <label>Graph Type</label>
+          <div class="radio-group" role="radiogroup" aria-label="Graph type selection">
+            <input type="radio" name="graph" id="graph-bar" value="bar" checked>
+            <label class="radio-btn graph-btn active" for="graph-bar">Bar Chart</label>
 
-        <div class="explain-card" id="explain-card">
-            <h3>How to interpret the graphs</h3>
-            <div class="explain-list">
-                <div class="explain-item"><strong>Interaction tips:</strong> Choose a church and graph type using the radio buttons. Use the embedded plot's year slider to pick a starting year (plots show data from that year to the latest). Keyboard arrow keys can also be used to step the slider.</div>
-                <div class="explain-item"><strong>Bar Chart:</strong> Percentage of verses covered for each book in the Bible. The y-axis shows percentage of the book covered across that period.</div>
-                <div class="explain-item"><strong>Count:</strong> Raw number of sermons that reference each book, aggregated over the selected period.</div>
-                <div class="explain-item"><strong>Line Chart:</strong> X-axis lists verses as "Book Chapter:Verse"; the line shows how many times each verse was visited in total over the selected period.</div>
-                <div class="explain-item"><strong>Stacked Bar Chart:</strong> For each book, the lower segment shows verses visited and the upper segment shows unread verses, aggregated over the selected period.</div>
-            </div>
+            <input type="radio" name="graph" id="graph-count" value="count">
+            <label class="radio-btn graph-btn" for="graph-count">Count</label>
+
+            <input type="radio" name="graph" id="graph-line" value="line">
+            <label class="radio-btn graph-btn" for="graph-line">Line Chart</label>
+
+            <input type="radio" name="graph" id="graph-stacked_bar" value="stacked_bar">
+            <label class="radio-btn graph-btn" for="graph-stacked_bar">Stacked Bar Chart</label>
+          </div>
         </div>
-
-        <div class="graph-container">
-            <div class="graph-placeholder" id="graph-placeholder">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <span>Loading visualization...</span>
-                </div>
-            </div>
-            <iframe id="graph-frame" class="graph-frame" style="display: none;"></iframe>
-        </div>
-
-        <footer class="footer">
-            <p>Generated from sermon data analysis</p>
-        </footer>
+      </div>
     </div>
 
-    <script>
-        // Configuration
-        const config = {
-            categories: ['combined', 'EB', 'ECC', 'EW'],
-            graphs: ['bar', 'count', 'line', 'stacked_bar'],
-            labels: {
-                combined: 'All Churches',
-                EB: 'Bishopston',
-                ECC: 'City Center',
-                EW: 'Westbury',
-                bar: 'Bar Chart',
-                count: 'Count',
-                line: 'Line Chart',
-                stacked_bar: 'Stacked Bar Chart'
-            }
-        };
+    <div class="explain-card" id="explain-card">
+      <h3>How to interpret the graphs</h3>
+      <div class="explain-list">
+        <div class="explain-item"><strong>Interaction tips:</strong> Choose a church and graph type using the radio
+          buttons. Use the embedded plot's year slider to pick a starting year (plots show data from that year to the
+          latest). Keyboard arrow keys can also be used to step the slider.</div>
+        <div class="explain-item"><strong>Bar Chart:</strong> Percentage of verses covered for each book in the Bible.
+          The y-axis shows percentage of the book covered across that period.</div>
+        <div class="explain-item"><strong>Count:</strong> Raw number of sermons that reference each book, aggregated
+          over the selected period.</div>
+        <div class="explain-item"><strong>Line Chart:</strong> X-axis lists verses as "Book Chapter:Verse"; the line
+          shows how many times each verse was visited in total over the selected period.</div>
+        <div class="explain-item"><strong>Stacked Bar Chart:</strong> For each book, the lower segment shows verses
+          visited and the upper segment shows unread verses, aggregated over the selected period.</div>
+      </div>
+    </div>
 
-        // State
-        let currentCategory = 'combined';
-        let currentGraph = 'bar';
+    <div class="graph-container">
+      <div class="graph-placeholder" id="graph-placeholder">
+        <div class="loading">
+          <div class="spinner"></div>
+          <span>Loading visualization...</span>
+        </div>
+      </div>
+      <iframe id="graph-frame" class="graph-frame" style="display: none;"></iframe>
+    </div>
 
-        // DOM Elements
-        const categoryRadios = document.querySelectorAll('input[name="category"]');
-        const graphRadios = document.querySelectorAll('input[name="graph"]');
-        const graphFrame = document.getElementById('graph-frame');
-        const graphPlaceholder = document.getElementById('graph-placeholder');
+    <footer class="footer">
+      <p>Generated from sermon data analysis</p>
+    </footer>
+  </div>
 
-        // Load graph
-        function loadGraph(category = currentCategory, graph = currentGraph) {
-            currentCategory = category;
-            currentGraph = graph;
+  <script>
+    // Configuration
+    const config = {
+      categories: ['combined', 'EB', 'ECC', 'EW'],
+      graphs: ['bar', 'count', 'line', 'stacked_bar'],
+      labels: {
+        combined: 'All Churches',
+        EB: 'Bishopston',
+        ECC: 'City Center',
+        EW: 'Westbury',
+        bar: 'Bar Chart',
+        count: 'Count',
+        line: 'Line Chart',
+        stacked_bar: 'Stacked Bar Chart'
+      }
+    };
 
-            // Update category radios
-            const radio = document.querySelector(`input[name="category"][value="${category}"]`);
-            if (radio) radio.checked = true;
-            // Update radio button active classes for categories
-            document.querySelectorAll('label[for^="cat-"]').forEach(lbl => lbl.classList.remove('active'));
-            const activeLabel = document.querySelector(`label[for="cat-${category}"]`);
-            if (activeLabel) activeLabel.classList.add('active');
+    // State
+    let currentCategory = 'combined';
+    let currentGraph = 'bar';
 
-            // Update graph radios and active classes
-            const gRadio = document.querySelector(`input[name="graph"][value="${graph}"]`);
-            if (gRadio) gRadio.checked = true;
-            document.querySelectorAll('.graph-btn').forEach(lbl => lbl.classList.remove('active'));
-            const activeGraphLabel = document.querySelector(`label[for="graph-${graph}"]`);
-            if (activeGraphLabel) activeGraphLabel.classList.add('active');
+    // DOM Elements
+    const categoryRadios = document.querySelectorAll('input[name="category"]');
+    const graphRadios = document.querySelectorAll('input[name="graph"]');
+    const graphFrame = document.getElementById('graph-frame');
+    const graphPlaceholder = document.getElementById('graph-placeholder');
 
-            // Show placeholder/loading
-            graphPlaceholder.style.display = 'flex';
-            graphFrame.style.display = 'none';
+    // Load graph
+    function loadGraph(category = currentCategory, graph = currentGraph) {
+      currentCategory = category;
+      currentGraph = graph;
 
-            // Construct path
-            let path = `./${category}/${graph}.html`;
-            if (location.protocol === "http:") {
-                path = `../output/${path.slice(2)}`; // Adjust path for local context
-            }
+      // Update category radios
+      const radio = document.querySelector(`input[name="category"][value="${category}"]`);
+      if (radio) radio.checked = true;
+      // Update radio button active classes for categories
+      document.querySelectorAll('label[for^="cat-"]').forEach(lbl => lbl.classList.remove('active'));
+      const activeLabel = document.querySelector(`label[for="cat-${category}"]`);
+      if (activeLabel) activeLabel.classList.add('active');
 
-            // Load the iframe
-            graphFrame.onload = () => {
-                graphPlaceholder.style.display = 'none';
-                graphFrame.style.display = 'block';
-            };
+      // Update graph radios and active classes
+      const gRadio = document.querySelector(`input[name="graph"][value="${graph}"]`);
+      if (gRadio) gRadio.checked = true;
+      document.querySelectorAll('.graph-btn').forEach(lbl => lbl.classList.remove('active'));
+      const activeGraphLabel = document.querySelector(`label[for="graph-${graph}"]`);
+      if (activeGraphLabel) activeGraphLabel.classList.add('active');
 
-            graphFrame.src = path;
-        }
+      // Show placeholder/loading
+      graphPlaceholder.style.display = 'flex';
+      graphFrame.style.display = 'none';
 
-        // Event listeners
-        // Radio inputs for category selection
-        categoryRadios.forEach(r => {
-            r.addEventListener('change', (e) => {
-                loadGraph(e.target.value, currentGraph);
-            });
-        });
+      // Construct path
+      let path = `./${category}/${graph}.html`;
+      if (location.protocol === "http:") {
+        path = `../output/${path.slice(2)}`; // Adjust path for local context
+      }
 
-        // Radio inputs for graph selection
-        graphRadios.forEach(r => {
-            r.addEventListener('change', (e) => {
-                loadGraph(currentCategory, e.target.value);
-            });
-        });
+      // Load the iframe
+      graphFrame.onload = () => {
+        graphPlaceholder.style.display = 'none';
+        graphFrame.style.display = 'block';
+      };
 
-        // Load default graph
-        loadGraph('combined', 'bar');
+      graphFrame.src = path;
+    }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Arrow keys for navigation
-            if (e.key === 'ArrowRight') {
-                const currentIdx = config.graphs.indexOf(currentGraph);
-                const nextIdx = (currentIdx + 1) % config.graphs.length;
-                loadGraph(currentCategory, config.graphs[nextIdx]);
-            } else if (e.key === 'ArrowLeft') {
-                const currentIdx = config.graphs.indexOf(currentGraph);
-                const prevIdx = (currentIdx - 1 + config.graphs.length) % config.graphs.length;
-                loadGraph(currentCategory, config.graphs[prevIdx]);
-            }
-        });
-    </script>
+    // Event listeners
+    // Radio inputs for category selection
+    categoryRadios.forEach(r => {
+      r.addEventListener('change', (e) => {
+        loadGraph(e.target.value, currentGraph);
+      });
+    });
+
+    // Radio inputs for graph selection
+    graphRadios.forEach(r => {
+      r.addEventListener('change', (e) => {
+        loadGraph(currentCategory, e.target.value);
+      });
+    });
+
+    // Load default graph
+    loadGraph('combined', 'bar');
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // Arrow keys for navigation
+      if (e.key === 'ArrowRight') {
+        const currentIdx = config.graphs.indexOf(currentGraph);
+        const nextIdx = (currentIdx + 1) % config.graphs.length;
+        loadGraph(currentCategory, config.graphs[nextIdx]);
+      } else if (e.key === 'ArrowLeft') {
+        const currentIdx = config.graphs.indexOf(currentGraph);
+        const prevIdx = (currentIdx - 1 + config.graphs.length) % config.graphs.length;
+        loadGraph(currentCategory, config.graphs[prevIdx]);
+      }
+    });
+  </script>
 </body>
+
 </html>
