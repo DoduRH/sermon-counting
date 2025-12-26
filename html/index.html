@@ -68,6 +68,41 @@
             flex-direction: column;
         }
 
+        /* Radio-style button group */
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .radio-group input[type="radio"] {
+            display: none;
+        }
+
+        .radio-btn {
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+            font-size: 0.95rem;
+            color: #333;
+        }
+
+        .radio-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .radio-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
         label {
             font-weight: 600;
             margin-bottom: 8px;
@@ -98,33 +133,7 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .quick-select-btn {
-            padding: 8px 16px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-        }
-
-        .quick-select-btn:hover {
-            border-color: #667eea;
-            color: #667eea;
-        }
-
-        .quick-select-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
+        /* Quick-select buttons removed */
 
         .graph-container {
             background: white;
@@ -235,36 +244,40 @@
         <div class="controls">
             <div class="control-group">
                 <div class="control-item">
-                    <label for="category-select">Category</label>
-                    <select id="category-select">
-                        <option value="combined">Combined</option>
-                        <option value="EB">Emmanuel Bristol (EB)</option>
-                        <option value="ECC">Emmanuel City Church (ECC)</option>
-                        <option value="EW">Emmanuel Wales (EW)</option>
-                    </select>
+                    <label>Church</label>
+                    <div class="radio-group" role="radiogroup" aria-label="Church selection">
+                        <input type="radio" name="category" id="cat-combined" value="combined" checked>
+                        <label class="radio-btn active" for="cat-combined">All Churches</label>
+
+                        <input type="radio" name="category" id="cat-EB" value="EB">
+                        <label class="radio-btn" for="cat-EB">Bishopston</label>
+
+                        <input type="radio" name="category" id="cat-ECC" value="ECC">
+                        <label class="radio-btn" for="cat-ECC">City Center</label>
+
+                        <input type="radio" name="category" id="cat-EW" value="EW">
+                        <label class="radio-btn" for="cat-EW">Westbury</label>
+                    </div>
                 </div>
                 <div class="control-item">
-                    <label for="graph-select">Graph Type</label>
-                    <select id="graph-select">
-                        <option value="bar">Bar Chart</option>
-                        <option value="count">Count</option>
-                        <option value="line">Line Chart</option>
-                        <option value="stacked_bar">Stacked Bar Chart</option>
-                    </select>
+                    <label>Graph Type</label>
+                    <div class="radio-group" role="radiogroup" aria-label="Graph type selection">
+                        <input type="radio" name="graph" id="graph-bar" value="bar" checked>
+                        <label class="radio-btn graph-btn active" for="graph-bar">Bar Chart</label>
+
+                        <input type="radio" name="graph" id="graph-count" value="count">
+                        <label class="radio-btn graph-btn" for="graph-count">Count</label>
+
+                        <input type="radio" name="graph" id="graph-line" value="line">
+                        <label class="radio-btn graph-btn" for="graph-line">Line Chart</label>
+
+                        <input type="radio" name="graph" id="graph-stacked_bar" value="stacked_bar">
+                        <label class="radio-btn graph-btn" for="graph-stacked_bar">Stacked Bar Chart</label>
+                    </div>
                 </div>
             </div>
 
-            <div class="control-item">
-                <label>Quick Navigation</label>
-                <div class="button-group">
-                    <button class="quick-select-btn active" data-category="combined" data-graph="bar">Combined - Bar</button>
-                    <button class="quick-select-btn" data-category="combined" data-graph="count">Combined - Count</button>
-                    <button class="quick-select-btn" data-category="combined" data-graph="line">Combined - Line</button>
-                    <button class="quick-select-btn" data-category="EB" data-graph="bar">EB - Bar</button>
-                    <button class="quick-select-btn" data-category="ECC" data-graph="bar">ECC - Bar</button>
-                    <button class="quick-select-btn" data-category="EW" data-graph="bar">EW - Bar</button>
-                </div>
-            </div>
+            <!-- Quick Navigation removed as requested -->
         </div>
 
         <div class="graph-container">
@@ -288,10 +301,10 @@
             categories: ['combined', 'EB', 'ECC', 'EW'],
             graphs: ['bar', 'count', 'line', 'stacked_bar'],
             labels: {
-                combined: 'Combined',
-                EB: 'Emmanuel Bristol',
-                ECC: 'Emmanuel City Church',
-                EW: 'Emmanuel Wales',
+                combined: 'All Churches',
+                EB: 'Bishopston',
+                ECC: 'City Center',
+                EW: 'Westbury',
                 bar: 'Bar Chart',
                 count: 'Count',
                 line: 'Line Chart',
@@ -304,36 +317,37 @@
         let currentGraph = 'bar';
 
         // DOM Elements
-        const categorySelect = document.getElementById('category-select');
-        const graphSelect = document.getElementById('graph-select');
+        const categoryRadios = document.querySelectorAll('input[name="category"]');
+        const graphRadios = document.querySelectorAll('input[name="graph"]');
         const graphFrame = document.getElementById('graph-frame');
         const graphPlaceholder = document.getElementById('graph-placeholder');
-        const quickSelectBtns = document.querySelectorAll('.quick-select-btn');
 
         // Load graph
         function loadGraph(category = currentCategory, graph = currentGraph) {
             currentCategory = category;
             currentGraph = graph;
 
-            // Update selects
-            categorySelect.value = category;
-            graphSelect.value = graph;
+            // Update category radios
+            const radio = document.querySelector(`input[name="category"][value="${category}"]`);
+            if (radio) radio.checked = true;
+            // Update radio button active classes for categories
+            document.querySelectorAll('label[for^="cat-"]').forEach(lbl => lbl.classList.remove('active'));
+            const activeLabel = document.querySelector(`label[for="cat-${category}"]`);
+            if (activeLabel) activeLabel.classList.add('active');
 
-            // Update quick select buttons
-            quickSelectBtns.forEach(btn => {
-                if (btn.dataset.category === category && btn.dataset.graph === graph) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+            // Update graph radios and active classes
+            const gRadio = document.querySelector(`input[name="graph"][value="${graph}"]`);
+            if (gRadio) gRadio.checked = true;
+            document.querySelectorAll('.graph-btn').forEach(lbl => lbl.classList.remove('active'));
+            const activeGraphLabel = document.querySelector(`label[for="graph-${graph}"]`);
+            if (activeGraphLabel) activeGraphLabel.classList.add('active');
 
             // Show placeholder/loading
             graphPlaceholder.style.display = 'flex';
             graphFrame.style.display = 'none';
 
             // Construct path
-            const path = `./${category}/${graph}.html`;
+            const path = `../output/${category}/${graph}.html`;
 
             // Load the iframe
             graphFrame.onload = () => {
@@ -345,17 +359,17 @@
         }
 
         // Event listeners
-        categorySelect.addEventListener('change', (e) => {
-            loadGraph(e.target.value, currentGraph);
+        // Radio inputs for category selection
+        categoryRadios.forEach(r => {
+            r.addEventListener('change', (e) => {
+                loadGraph(e.target.value, currentGraph);
+            });
         });
 
-        graphSelect.addEventListener('change', (e) => {
-            loadGraph(currentCategory, e.target.value);
-        });
-
-        quickSelectBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                loadGraph(btn.dataset.category, btn.dataset.graph);
+        // Radio inputs for graph selection
+        graphRadios.forEach(r => {
+            r.addEventListener('change', (e) => {
+                loadGraph(currentCategory, e.target.value);
             });
         });
 
