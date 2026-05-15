@@ -10,6 +10,9 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+DOMAIN="sermon-stats.joshhq.uk"
+
+echo $DOMAIN > output/CNAME
 
 echo -e "${BLUE}🚀 Sermon Counting Dashboard Deployment${NC}"
 echo "=========================================="
@@ -19,8 +22,6 @@ if [ ! -d "output" ]; then
     echo -e "${YELLOW}⚠️  Error: 'output' directory not found${NC}"
     exit 1
 fi
-
-cp html/index.html output/index.html
 
 # Check if gh-pages is installed
 if ! npm list --depth=0 | grep -q gh-pages; then
@@ -39,6 +40,6 @@ echo "Your dashboard is now live at:"
 echo "https://github.com/dodurh/sermon-counting/settings/pages"
 echo ""
 echo "Or visit the live site at:"
-echo "https://dodurh.github.io/sermon-counting"
+echo "https://$DOMAIN"
 echo ""
 echo "💡 Tip: Update your graphs and run this script again to refresh!"

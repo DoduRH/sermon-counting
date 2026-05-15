@@ -393,4 +393,13 @@ for church, d in (pbar := tqdm(churches.items(), total=len(churches))):
 if 'yearData' not in locals():
     yearData = generateGraphData(churches['combined'], visitedIdx)[2007]
 romans = yearData[yearData.index.str.startswith("Romans")]
-romans[romans == 0]
+print(romans[romans == 0])
+
+# %%
+# Make file with the date
+from humanize import ordinal
+today = datetime.now()
+formatted = today.strftime(f"{ordinal(today.day)} %b %Y")
+
+index = Path("html/index.html").read_text().replace("{{thedate}}", formatted)
+Path("output/index.html").write_text(index)
